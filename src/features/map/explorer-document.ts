@@ -43,11 +43,12 @@ padding:10px 12px;min-height:43px;font:700 12px system-ui,-apple-system,sans-ser
 #legend{position:absolute;z-index:900;left:10px;bottom:26px;max-width:185px;padding:10px 11px;
 border-radius:12px;background:rgba(255,255,255,.96);color:#174c37;font:700 11px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 2px 8px #0002}
 #legend small{font-size:10px;display:block;color:#526f5c;font-weight:500;margin-top:3px}
+#legend.editor-legend{left:8px;bottom:22px;padding:8px 9px;max-width:182px}
 #feedback{position:absolute;z-index:1001;top:10px;left:10px;max-width:160px;padding:8px 10px;
 background:rgba(255,255,255,.97);font:700 11px/1.4 system-ui,sans-serif;border-radius:10px;color:#174c37}
 #feedback:empty{display:none}
-.start-pin,.destination-pin,.cafe-pin{display:block;width:32px;height:32px}
-.start-pin svg,.destination-pin svg,.cafe-pin svg{width:100%;height:100%;
+.start-pin,.destination-pin,.cafe-pin,.checkpoint-pin{display:block;width:32px;height:32px}
+.start-pin svg,.destination-pin svg,.cafe-pin svg,.checkpoint-pin svg{width:100%;height:100%;
 filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 .leaflet-popup-content{margin:11px!important;font:13px/1.5 system-ui,sans-serif;color:#20382d}
 .leaflet-popup-content a{color:#236d4c;font-weight:700}
@@ -69,6 +70,7 @@ padding:25px;align-items:center;justify-content:center;text-align:center;font:60
  <div id="sketch-status">Memuat rute</div>
  <small id="route-disclaimer">Data model OSM, belum diperiksa di lapangan.</small>
  <small id="cafe-status">Kafe OSM muncul setelah dicari.</small>
+ <small id="checkpoint-status"></small>
 </div>
 <div id="fallback">Peta tidak tersedia. Periksa internet, lalu coba lagi.</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -107,7 +109,7 @@ let pickingCheckpoint=false,checkpointMarker=null;
 let checkpointMarkers=[];
 const destinationButton=document.getElementById('destination');
 const destinationIcon=pinIcon('#eb7427','destination-pin');
-const checkpointIcon=pinIcon('#935926','cafe-pin');
+const checkpointIcon=pinIcon('#6c55a0','checkpoint-pin');
 let destinationMarker=null;
 function showDestination(latlng){
  if(destinationMarker)map.removeLayer(destinationMarker);
@@ -143,6 +145,8 @@ const drawButton=document.getElementById('draw'),undoButton=document.getElementB
 const stopsButton=document.getElementById('add-stop');
 if(payload.editorMode){
  document.getElementById('controls').classList.add('editor-controls');
+ document.getElementById('legend').classList.add('editor-legend');
+ document.getElementById('cafe-status').style.display='none';
  drawButton.textContent='Selesai gambar';
  drawButton.classList.add('active');
  stopsButton.style.display='block';
@@ -177,6 +181,8 @@ function setCheckpoints(items){
   }
   marker.bindPopup(content).addTo(map);checkpointMarkers.push(marker);
  }
+ document.getElementById('checkpoint-status').textContent=checkpointMarkers.length
+  ?checkpointMarkers.length+' checkpoint (pin ungu, belum diverifikasi)':'';
 }
 window.__explorstreetSetCheckpoints=setCheckpoints;
 window.addEventListener('message',event=>{

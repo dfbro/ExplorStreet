@@ -6,12 +6,15 @@ import {getAreaCenter,osmUrl} from '@/features/map/areas';
 import {buildExplorerDocument} from '@/features/map/explorer-document';
 import {roadRouteGeometry} from '@/features/map/route-sketch';
 import {useCafeSearch} from '@/features/map/use-cafe-search';
+import type {StoreCheckpoint} from '@/features/map/editor-json';
 import {font,palette} from '@/theme/tokens';
 
-export function AreaMap({area,height=300,routeId,compact=false,destinationMode=false,destination=null,onDestination}:{
+const EMPTY_CHECKPOINTS:StoreCheckpoint[]=[];
+export function AreaMap({area,height=300,routeId,compact=false,destinationMode=false,destination=null,onDestination,checkpointPresets=EMPTY_CHECKPOINTS}:{
  area:string;height?:number;routeId?:string;compact?:boolean;
  destinationMode?:boolean;destination?:{latitude:number;longitude:number}|null;
  onDestination?:(point:{latitude:number;longitude:number})=>void;
+ checkpointPresets?:StoreCheckpoint[];
 }){
  const {latitude,longitude}=getAreaCenter(area);
  const {lookup,load}=useCafeSearch(area);
@@ -19,9 +22,10 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
  const html=useMemo(()=>buildExplorerDocument({
   area,latitude,longitude,sketch:route.points,
   roadAligned:route.source==='osm-road-graph',cafes:lookup.cafes,
+  editorCheckpoints:checkpointPresets,
   showSketch:route.source==='osm-road-graph',destinationMode,
   destination:destination?[destination.latitude,destination.longitude]:null,
- }),[area,latitude,longitude,route,lookup.cafes,destinationMode,destination]);
+ }),[area,latitude,longitude,route,lookup.cafes,checkpointPresets,destinationMode,destination]);
  return <View style={{gap:11}}>
    <MapSurface html={html} height={height} area={area} onDestination={onDestination}/>
    {destinationMode ? null : <>

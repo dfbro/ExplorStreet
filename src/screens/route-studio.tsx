@@ -6,6 +6,7 @@ import {MapSurface} from '@/components/map-surface';
 import {Check,Coffee,Info,MapPin,Plus,Route as RouteIcon,Store,Tag,X} from '@/components/icons';
 import {getAreaCenter} from '@/features/map/areas';
 import {buildExplorerDocument,type MapEditorEvent} from '@/features/map/explorer-document';
+import {getDefaultPresets} from '@/features/map/presets';
 import {exportJsonFile} from '@/features/map/export-file';
 import {
  estimateSketchKm,makeRouteJson,makeCheckpointJson,parseEditorJson,
@@ -15,6 +16,7 @@ import {font,palette,radius} from '@/theme/tokens';
 
 const AREAS=['Ijen','Kayutangan','Lowokwaru','Blimbing','Sukun'];
 const storageKey='explorstreet.editor.v1';
+const builtIn=getDefaultPresets();
 const kindLabels:Record<CheckpointKind,string>={cafe:'Kafe',store:'Toko',rest:'Tempat rehat'};
 type SavedDraft={id:string;title:string;area:string;activity:RouteActivity;
  points:GeoPoint[];checkpoints:StoreCheckpoint[]};
@@ -174,6 +176,16 @@ export function RouteStudioScreen(){
   }
   setArea(next);setMapSeed(prev=>({area:next,points:[],revision:prev.revision+1}));
  };
+ const choosePreset=(id:string)=>{
+  const route=builtIn.routes.find(item=>item.id===id);
+  if(!route)return;
+  setRouteId(route.id);setTitle(route.title);setArea(route.area);setActivity(route.activity);
+  setPoints(route.geometry.coordinates);
+  setCheckpoints(builtIn.checkpointSets.find(set=>set.routeId===route.id)?.checkpoints??[]);
+  resetPlaceForm();
+  setMapSeed(prev=>({area:route.area,points:route.geometry.coordinates,revision:prev.revision+1}));
+  setFeedback('Salinan preset dimuat ke editor. Data asli tidak berubah.');
+ };
  return <>
   <Stack.Screen options={{title:'Studio Rute'}}/>
   <ScrollView ref={scroller} keyboardShouldPersistTaps="handled"
@@ -186,6 +198,26 @@ export function RouteStudioScreen(){
      Gambar jalur, ukur estimasinya, lalu tandai pit-stop. Draf tersimpan di perangkat.
     </Text>
    </View>
+   {builtIn.routes.length>0?<View style={{backgroundColor:palette.surface,
+    borderWidth:1,borderColor:palette.line,borderRadius:radius.large,padding:14,gap:10}}>
+    <SectionTitle>Preset bawaan</SectionTitle>
+    <Text style={{fontFamily:font.medium,color:palette.secondaryText,fontSize:12}}>
+     Pilih preset untuk membuat salinan yang bisa diedit dan diekspor.
+    </Text>
+    {builtIn.routes.map(route=><Pressable key={route.id} accessibilityRole="button"
+      onPress={()=>choosePreset(route.id)}
+      style={{minHeight:46,padding:10,borderRadius:12,backgroundColor:palette.pale,
+       flexDirection:'row',alignItems:'center',gap:7}}>
+      <RouteIcon size={18} color={palette.pine}/>
+      <Text style={{fontFamily:font.bold,color:palette.forest,flex:1}}>{route.title}</Text>
+      <Text style={{fontFamily:font.semi,color:palette.pine,fontSize:12}}>
+       {route.distance.estimatedKm.toFixed(2)} km
+      </Text>
+     </Pressable>)}
+   </View>:null}
+   {builtIn.error?<Text style={{fontFamily:font.medium,color:palette.danger,fontSize:12}}>
+     Preset bawaan tidak dapat dimuat: {builtIn.error}
+    </Text>:null}
    <View style={{backgroundColor:palette.surface,borderRadius:radius.large,
     padding:15,gap:13,borderWidth:1,borderColor:palette.line}}>
     <FormInput label="Nama rute" value={title} onChangeText={setTitle} placeholder="Contoh: Ijen sore"/>
@@ -207,7 +239,9 @@ export function RouteStudioScreen(){
     </View>
     <View style={{flex:1,gap:3}}>
      <Text style={{fontFamily:font.semi,color:'#D8F0D6',fontSize:12}}>Estimasi jarak sketsa</Text>
-     <Text testID="estimate-distance" style={{fontFamily:font.extra,fontSize:29,color:palette.white}}>
+     <Text testID="estimate-distance" numberOfLines={1} adjustsFontSizeToFit
+      minimumFontScale={.75} style={{fontFamily:font.extra,
+       fontSize:width<325?24:29,color:palette.white,flexShrink:1}}>
       {distanceKm.toFixed(2)} km
      </Text>
     </View>

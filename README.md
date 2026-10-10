@@ -11,6 +11,15 @@ validation status. The latest Android-sized visual and interaction audit is in
 custom-distance validation and Git rollback checkpoint are documented in
 [SEARCH_HOME_QA.md](SEARCH_HOME_QA.md).
 
+The **Studio Rute** sketch editor, distance estimate, checkpoint/promotion
+drafts, separate JSON downloads/Android shares, paste-back import, and
+future bundled JSON presets are documented in [ROUTE_PRESETS.md](ROUTE_PRESETS.md).
+Use `/studio` to prepare files to submit for the official Ijen and other
+area presets. The bundled preset manifest is intentionally empty until
+verified user-authored exports are supplied.
+The mobile screenshot, download and JSON roundtrip verification for
+this feature is in [STUDIO_JSON_QA.md](STUDIO_JSON_QA.md).
+
 ## Main screen
 
 - Search-first home: **search field → map/temporary destination pin →
