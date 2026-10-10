@@ -66,3 +66,33 @@ test('untrusted OSM names cannot break out of script payload',()=>{
  assert.ok(html.includes('\\u003c/script\\u003e'));
  assert.match(html,/textContent=cafe\.name/);
 });
+
+test('checkpoint map offers distinct category location glyphs and promo draft badge',()=>{
+ const checkpoint={
+  id:'shop-1',name:'Toko simulasi',kind:'store',coordinates:[112.6214,-7.9728],
+  promoted:true,promoText:'Diskon draft',notes:'Belum diverifikasi',verification:'unverified'
+ };
+ const html=buildExplorerDocument({area:'Ijen',latitude:-7.9728,longitude:112.6214,
+  sketch:[],showSketch:false,cafes:[],editorMode:true,editorCheckpoints:[checkpoint]});
+ assert.match(html,/checkpoint-pin--promoted/);
+ assert.match(html,/promo-badge/);
+ assert.match(html,/checkpointIcon\(kind,promoted\)/);
+ assert.match(html,/store:\{/);
+ assert.match(html,/cafe:\{/);
+ assert.match(html,/rest:\{/);
+ assert.match(html,/Toko simulasi/);
+ assert.match(html,/Promosi draft, belum diverifikasi/);
+});
+
+test('checkpoint names and promo descriptions are embedded safely',()=>{
+ const attack='</script><script>alert(123)</script>';
+ const html=buildExplorerDocument({area:'Ijen',latitude:-7.9728,longitude:112.6214,
+  sketch:[],showSketch:false,cafes:[],editorMode:true,editorCheckpoints:[{
+   id:'shop-2',name:attack,kind:'store',coordinates:[112.6214,-7.9728],
+   promoted:true,promoText:attack,notes:attack,verification:'unverified'
+  }]});
+ assert.equal(html.includes(attack),false);
+ assert.ok(html.includes('\\u003c/script\\u003e'));
+ assert.match(html,/promo\.textContent/);
+ assert.match(html,/name\.textContent/);
+});

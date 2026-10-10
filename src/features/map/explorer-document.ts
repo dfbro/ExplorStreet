@@ -47,9 +47,12 @@ border-radius:12px;background:rgba(255,255,255,.96);color:#174c37;font:700 11px/
 #feedback{position:absolute;z-index:1001;top:10px;left:10px;max-width:160px;padding:8px 10px;
 background:rgba(255,255,255,.97);font:700 11px/1.4 system-ui,sans-serif;border-radius:10px;color:#174c37}
 #feedback:empty{display:none}
-.start-pin,.destination-pin,.cafe-pin,.checkpoint-pin{display:block;width:32px;height:32px}
-.start-pin svg,.destination-pin svg,.cafe-pin svg,.checkpoint-pin svg{width:100%;height:100%;
+.start-pin,.destination-pin,.cafe-pin{display:block;width:32px;height:32px}
+.start-pin svg,.destination-pin svg,.cafe-pin svg{width:100%;height:100%;
 filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.checkpoint-pin{display:block;width:36px;height:43px}
+.checkpoint-pin svg{display:block;width:100%;height:100%;overflow:visible;
+filter:drop-shadow(0 2px 3px rgba(0,0,0,.30))}
 .leaflet-popup-content{margin:11px!important;font:13px/1.5 system-ui,sans-serif;color:#20382d}
 .leaflet-popup-content a{color:#236d4c;font-weight:700}
 #fallback{display:none;position:absolute;inset:0;z-index:1200;background:#e7f1e6;color:#174c37;
@@ -109,7 +112,42 @@ let pickingCheckpoint=false,checkpointMarker=null;
 let checkpointMarkers=[];
 const destinationButton=document.getElementById('destination');
 const destinationIcon=pinIcon('#eb7427','destination-pin');
-const checkpointIcon=pinIcon('#6c55a0','checkpoint-pin');
+// Material-style place pin containing a category glyph. Only "promoted"
+// draft entries have an amber star badge; it is not a verification mark.
+function checkpointIcon(kind,promoted){
+ const kinds={
+  store:{
+   color:'#376187',
+   label:'Toko',
+   glyph:'M4 4h16l2 6v3h-2v7H4v-7H2v-3l2-6zm2 2-1.5 4h15L18 6H6zm1 7v5h5v-5H7zm7 0v5h4v-5h-4z'
+  },
+  cafe:{
+   color:'#93613e',
+   label:'Kafe',
+   glyph:'M4 6h13v2h3a3 3 0 0 1 0 6h-3a6.5 6.5 0 0 1-6.5 6H10A6 6 0 0 1 4 14V6zm13 4v2h3a1 1 0 0 0 0-2h-3zM6 4h2v1H6zm4-2h2v3h-2zm4 2h2v1h-2z'
+  },
+  rest:{
+   color:'#34745d',
+   label:'Rehat',
+   glyph:'M4 5h16v3H4V5zm2 4h12v2H6V9zm-2 3h16v3H4v-3zm3 4h2v4H7v-4zm8 0h2v4h-2v-4z'
+  }
+ };
+ const item=kinds[kind]||kinds.rest;
+ const badge=promoted
+  ?'<circle class="promo-badge" cx="33" cy="8" r="7" fill="#f3c44e" stroke="white" stroke-width="2"/>'
+   +'<path d="M33 3.7l1.15 2.55 2.8.31-2.1 1.92.58 2.76L33 9.89l-2.43 1.35.58-2.76-2.1-1.92 2.8-.31z" fill="#65450f"/>'
+  :'';
+ const svg='<svg viewBox="0 0 40 48" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'
+  +'<path d="M20 2C10 2 3 9 3 18c0 11 17 27 17 27s17-16 17-27C37 9 30 2 20 2Z" fill="'+item.color+'" stroke="white" stroke-width="1.4"/>'
+  +'<circle cx="20" cy="17" r="10" fill="white"/>'
+  +'<g transform="translate(13.6 10.6) scale(.53)"><path d="'+item.glyph+'" fill="'+item.color+'"/></g>'
+  +badge+'</svg>';
+ return L.divIcon({
+  html:'<span class="checkpoint-pin checkpoint-pin--'+kind+(promoted?' checkpoint-pin--promoted':'')+'">'+svg+'</span>',
+  className:'',iconSize:[36,43],iconAnchor:[18,40],popupAnchor:[0,-35]
+ });
+}
+const pendingCheckpointIcon=checkpointIcon('rest',false);
 let destinationMarker=null;
 function showDestination(latlng){
  if(destinationMarker)map.removeLayer(destinationMarker);
@@ -167,22 +205,44 @@ function setCheckpoints(items){
  for(const marker of checkpointMarkers)map.removeLayer(marker);
  checkpointMarkers=[];
  if(!Array.isArray(items))return;
+ let promotedCount=0;
  for(const stop of items.slice(0,50)){
   if(!stop||!Array.isArray(stop.coordinates)||stop.coordinates.length!==2)continue;
   const [lon,lat]=stop.coordinates;
   if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
-  const marker=L.marker([lat,lon],{icon:checkpointIcon,title:String(stop.name||'Checkpoint')});
+  const kind=['store','cafe','rest'].includes(stop.kind)?stop.kind:'rest';
+  const promoted=stop.promoted===true;
+  if(promoted)promotedCount++;
+  const label={store:'Toko',cafe:'Kafe',rest:'Tempat rehat'}[kind];
+  const marker=L.marker([lat,lon],{
+   icon:checkpointIcon(kind,promoted),
+   title:label+': '+String(stop.name||'Checkpoint')+(promoted?' — Promosi draft':'')
+  });
   const content=document.createElement('div'),name=document.createElement('strong');
   name.textContent=String(stop.name||'Checkpoint');content.appendChild(name);
-  if(stop.promoted){
+  const category=document.createElement('div');
+  category.textContent=label+' • Lokasi belum diverifikasi';
+  content.appendChild(category);
+  if(promoted){
    const promo=document.createElement('div');
-   promo.textContent='Promosi (draft, belum diverifikasi)';
+   promo.textContent='Promosi draft, belum diverifikasi'+(stop.promoText?' — '+String(stop.promoText):'');
    content.appendChild(promo);
   }
-  marker.bindPopup(content).addTo(map);checkpointMarkers.push(marker);
+  if(stop.notes){
+   const description=document.createElement('div');
+   description.textContent=String(stop.notes);content.appendChild(description);
+  }
+  // The Studio map has two rows of editing controls at its top.
+  // Reserve that space when Leaflet auto-pans an opened popup.
+  marker.bindPopup(content,{
+   autoPan:true,
+   autoPanPaddingTopLeft:L.point(12,payload.editorMode?116:20),
+   autoPanPaddingBottomRight:L.point(12,34)
+  }).addTo(map);
+  checkpointMarkers.push(marker);
  }
  document.getElementById('checkpoint-status').textContent=checkpointMarkers.length
-  ?checkpointMarkers.length+' checkpoint (pin ungu, belum diverifikasi)':'';
+  ?checkpointMarkers.length+' checkpoint'+(promotedCount?' • '+promotedCount+' promosi draft':''):'';
 }
 window.__explorstreetSetCheckpoints=setCheckpoints;
 window.addEventListener('message',event=>{
@@ -260,7 +320,9 @@ map.on('click',function(event){
   pickingCheckpoint=false;stopsButton.classList.remove('active');
   stopsButton.textContent='Tandai checkpoint';
   if(checkpointMarker)map.removeLayer(checkpointMarker);
-  checkpointMarker=L.marker(event.latlng,{icon:checkpointIcon,title:'Checkpoint belum disimpan'}).addTo(map);
+  checkpointMarker=L.marker(event.latlng,{
+   icon:pendingCheckpointIcon,title:'Checkpoint belum disimpan'
+  }).addTo(map);
   emit({type:'explorstreet:checkpoint-point',coordinates:[
    Number(event.latlng.lng.toFixed(6)),Number(event.latlng.lat.toFixed(6))]});
   return;

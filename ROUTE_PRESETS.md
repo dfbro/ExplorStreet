@@ -80,6 +80,18 @@ draft marker. `promoText` is always user-authored and does not authorize
 a live commercial offer. Checkpoint coordinates are manually chosen,
 not independently verified addresses. A route may have 0-50 checkpoints.
 
+### Marker design
+
+All default and Studio checkpoint markers are **Material-style location pins**
+with an interior category symbol, rather than generic ovals:
+`store` uses a blue storefront, `cafe` uses a brown coffee cup,
+and `rest` uses a green bench. A `promoted:true` checkpoint retains its
+category glyph and receives a small amber **star badge**. The badge means
+**promotion draft only**, not verified business participation, discounts,
+opening hours, or paid placement. Popup text explicitly communicates
+the unverified status. Blue storefront and brown coffee pins are distinct
+from the existing OpenStreetMap cafe markers.
+
 ## Default preset manifest (awaiting user-supplied JSON)
 
 `src/features/map/presets/manifest.json` has two arrays:

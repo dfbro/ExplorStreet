@@ -9,6 +9,11 @@
   segments. This is **not** the actual length of the road network.
 - Checkpoint category: cafe/store/rest. Manual coordinates, optional
   promoted **draft** flag, promo text, notes, and removal from editor.
+- Follow-up marker update: blue **storefront**, brown **coffee**, green
+  **rest** glyphs within location pins; `promoted:true` adds an amber
+  star badge without changing the category icon. The popup labels the
+  promotional offer as an unverified draft. Leaflet auto-pan reserves
+  space for the editing controls at the top of the map.
 - Local draft persistence with AsyncStorage, no backend or location tracking.
 - Exported two independent versioned JSON files:
   `explorstreet.route` (GeoJSON `LineString` lon/lat order) and
