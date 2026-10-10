@@ -48,7 +48,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test:routes": "node --experimental-strip-types --test scripts/test-route-ranking.mjs",
-    "test:map": "node --experimental-strip-types --test scripts/test-map.mjs"
+    "test:map": "node --experimental-strip-types --test scripts/test-map.mjs",
+    "test:editor": "node --experimental-strip-types --test scripts/test-editor-json.mjs"
   },
   "private": true
 }
