@@ -14,7 +14,8 @@ const tabs=[
 
 export function AppNav(){
  const path=usePathname(),insets=useSafeAreaInsets();
- return <View style={{backgroundColor:palette.surface,borderTopWidth:1,borderColor:palette.line,
+ return <View style={{position:'absolute',left:0,right:0,bottom:0,zIndex:10,
+   backgroundColor:palette.surface,borderTopWidth:1,borderColor:palette.line,
    flexDirection:'row',paddingHorizontal:6,paddingTop:7,paddingBottom:Math.max(insets.bottom,9)}}>
   {tabs.map(({href,title,Icon})=>{
    const selected=path===href;
