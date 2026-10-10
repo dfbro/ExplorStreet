@@ -136,7 +136,7 @@ export function RouteSearchScreen(){
    contentContainerStyle={{maxWidth:900,width:'100%',alignSelf:'center',paddingHorizontal:16,
     paddingTop:13,
     // Keep enough trailing space to lift even a single search result above the bottom tabs.
-    paddingBottom:hasQuery?Math.max(380,height*.55)+insets.bottom:40+insets.bottom,gap:15}}>
+    paddingBottom:hasQuery?Math.max(380,height*.55)+insets.bottom:92+insets.bottom,gap:15}}>
    <AppHeader/>
    <View style={{gap:4,paddingTop:6}}>
     <Text style={{fontFamily:font.extra,color:palette.ink,fontSize:width<350?25:29,letterSpacing:-.7}}>
