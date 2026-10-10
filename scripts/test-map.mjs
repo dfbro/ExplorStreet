@@ -1,17 +1,27 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 
-import {demoSketch,straightLineKm} from '../src/features/map/route-sketch.ts';
+import {roadRouteGeometry,straightLineKm} from '../src/features/map/route-sketch.ts';
 import {parseOverpassResponse} from '../src/features/map/cafe-parser.ts';
 import {buildExplorerDocument} from '../src/features/map/explorer-document.ts';
+import {roadRouteData} from '../src/features/map/road-route-data.ts';
 
-test('demo sketch remains an illustration with a closed loop',()=>{
- const route=demoSketch('Ijen','ijen-run');
- assert.equal(route.source,'illustration');
- assert.equal(route.points.length,5);
- assert.deepEqual(route.points[0],route.points[4]);
- assert.ok(straightLineKm(route.points)>0);
+test('all six route IDs use static road-graph geometries rather than random polygons',()=>{
+ assert.equal(Object.keys(roadRouteData).length,6);
+ for(const id of Object.keys(roadRouteData)){
+  const route=roadRouteGeometry(id);
+  assert.equal(route.source,'osm-road-graph',id);
+  assert.ok(route.profile==='foot'||route.profile==='bike',id);
+  assert.ok(route.points.length>=50,id);
+  assert.ok(new Set(route.points.map(point=>point.join(','))).size>=35,id);
+  assert.ok(straightLineKm(route.points)>route.distanceKm*.88,id);
+  assert.ok(straightLineKm(route.points)<route.distanceKm*1.015,id);
+ }
  assert.equal(straightLineKm([[-7.97,112.62]]),0);
+});
+test('unknown route has no fabricated fallback route',()=>{
+ assert.deepEqual(roadRouteGeometry('nonexistent'),{source:'none',points:[]});
+ assert.deepEqual(roadRouteGeometry(),{source:'none',points:[]});
 });
 
 test('parser accepts named OSM cafes in Malang and prevents duplicates',()=>{
@@ -34,13 +44,15 @@ test('parser discards malformed data and coordinates outside Malang',()=>{
  ]}),[]);
 });
 
-test('Leaflet HTML identifies sketch, OSM attribution and cafes',()=>{
+test('Leaflet HTML identifies road route, Material location pins, OSM attribution and cafes',()=>{
  const html=buildExplorerDocument({area:'Ijen',latitude:-7.9728,longitude:112.6214,
-  sketch:demoSketch('Ijen','ijen-run').points,showSketch:true,cafes:[]});
+  sketch:roadRouteGeometry('ijen-run').points,roadAligned:true,showSketch:true,cafes:[]});
  assert.match(html,/leaflet@1\.9\.4/);
  assert.match(html,/OpenStreetMap contributors/);
- assert.match(html,/Gambar sketsa/);
- assert.match(html,/Bukan petunjuk navigasi/);
+ assert.match(html,/Gambar konsep/);
+ assert.match(html,/osm-road-graph/);
+ assert.match(html,/viewBox=\"0 0 24 24\"/);
+ assert.match(html,/OSRM foot\/bike/);
  assert.match(html,/__explorstreetMapReady/);
  assert.equal(html.includes('__EXPLORER_MAP_PAYLOAD__'),false);
 });

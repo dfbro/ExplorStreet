@@ -79,13 +79,16 @@ triage them against supported SDK versions before deploying publicly.
 The earlier static screenshot and official iframe embed were replaced with
 a reusable **Leaflet** document in `src/features/map/explorer-document.ts`.
 It renders via `MapSurface` (WebView on mobile, srcDoc iframe on web),
-shows OSM attribution, a visually distinct dashed **illustrative** polyline,
-and provides map-click editing, undo, and reset.
+shows OSM attribution, and provides map-click editing, undo, and reset.
 
-The initial sketch geometry in `route-sketch.ts` was generated for
-demonstration. It is not surveyed, snapped to roads, verified for pedestrian
-access, or appropriate for real navigation. The example route distance and
-duration are separate mock values.
+The previous randomized square-like sketches have been superseded:
+`road-route-data.ts` now stores **six deterministic street-following
+route snapshots**, calculated with FOSSGIS OSRM's routed-foot and routed-bike
+profiles. `scripts/generate-road-samples.py` refreshes those snapshots.
+They are represented by solid green polylines and Material-style location
+pins. The manual editing mode is still an amber, unsnapped concept sketch.
+Distance matches the routing graph, but terrain, access, surface, actual
+hazards and durations remain unverified. See `ROAD_SAMPLE_QA.md`.
 
 `cafe-parser.ts` validates named real OSM POI records obtained from
 Overpass. `cafes.ts` performs **user-triggered** retrieval with an

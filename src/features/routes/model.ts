@@ -15,8 +15,6 @@ export interface RouteInfo {
   stopScore: Priority;
   summary: string;
   notes: string;
-  path: string;
-  start: { x: number; y: number };
   accent: 'lime' | 'gold' | 'sky';
   tags: string[];
   verification: 'sample';

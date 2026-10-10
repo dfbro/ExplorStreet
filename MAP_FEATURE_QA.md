@@ -1,5 +1,9 @@
 # ExplorStreet — Interactive OSM map and cafe POI QA
 
+**Historical audit.** The dashed randomized demo-route geometry described
+below was replaced by six FOSSGIS OSRM road-derived snapshots. See
+`ROAD_SAMPLE_QA.md` for the latest geometry and marker verification.
+
 Status: implementation in `~/workspace/ExplorStreet`; browser verification on Expo
 React Native Web; **no Android/iOS native build has been run**.
 

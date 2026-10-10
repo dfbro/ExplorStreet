@@ -1,26 +1,22 @@
-import {getAreaCenter} from './areas.ts';
+import {roadRouteData} from './road-route-data.ts';
 
 export type LatLng = [latitude:number, longitude:number];
 
-export interface RouteSketch {
-  source:'illustration';
+export interface RoadRoute {
+  source:'osm-road-graph'|'none';
   points:LatLng[];
+  profile?:'foot'|'bike';
+  distanceKm?:number;
 }
 
-const variants:readonly [number,number][][] = [
-  [[-.0016,-.0019],[.0018,-.0011],[.0016,.0016],[-.0013,.0018],[-.0016,-.0019]],
-  [[-.0017,.0004],[.0014,-.0018],[.0020,.0006],[.0002,.0024],[-.0017,.0004]],
-  [[-.0013,-.0020],[.0017,-.0003],[.0003,.0021],[-.0019,.0006],[-.0013,-.0020]],
-];
-
-export function demoSketch(area:string,routeId?:string):RouteSketch {
-  const center=getAreaCenter(area);
-  const sum=Array.from(routeId??area).reduce((a,char)=>a+char.charCodeAt(0),0);
-  const selected=variants[sum%variants.length];
+export function roadRouteGeometry(routeId?:string):RoadRoute {
+  if(!routeId || !Object.hasOwn(roadRouteData,routeId))return {source:'none',points:[]};
+  const route=roadRouteData[routeId as keyof typeof roadRouteData];
   return {
-    source:'illustration',
-    points:selected.map(([dLat,dLon])=>
-      [Number((center.latitude+dLat).toFixed(6)),Number((center.longitude+dLon).toFixed(6))] as LatLng),
+    source:'osm-road-graph',
+    profile:route.profile,
+    distanceKm:route.distanceKm,
+    points:route.points.map(([latitude,longitude])=>[latitude,longitude]),
   };
 }
 

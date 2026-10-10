@@ -45,6 +45,25 @@ demo content rather than verified trails.
 Custom ranges constrain the *demo record distances*, not actual measured
 OpenStreetMap route length.
 
+## Search focus and scroll behavior
+
+- On input focus the search field switches to forest green (`#174C37`)
+  with white content and a visible green accent border. The browser's
+  black native focus outline is replaced by the themed focus surface.
+- Typing alone never scrolls the page to search results.
+- Pressing **Enter/Search**, blurring the field, or dismissing the Android
+  keyboard after entering a nonempty query requests an animated scroll
+  toward **Hasil pencarian**. The implementation waits for keyboard
+  dismissal when available, with a short fallback for desktop/web.
+- When a query returns just one route, extra trailing scroll space allows
+  its result heading to reach the upper viewport instead of being clamped
+  near the bottom.
+- Browser Use verified focused/blurred styles, no black outline, Enter
+  and blur scroll positions, and 320px focus layout: **12/12 checks passed**.
+  Test evidence:
+  `~/workspace/AI/.browser-use/explorstreet-qa/search-focus-qa.json`,
+  `search-focus-green-mobile.png`, `search-enter-results-mobile.png`.
+
 ## Destination selection
 
 The home map adds an explicit destination-picking state in the Leaflet

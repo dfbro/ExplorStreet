@@ -74,12 +74,19 @@ session. Native Android builds have intentionally been left to the user.
 - **Leaflet 1.9.4** renders an interactive OpenStreetMap basemap in
   `react-native-webview` on Android/iOS and a local `srcDoc` iframe on web.
   The WebView identifies the app with `ExplorStreetPrototype/0.1`.
-- A **dashed amber route sketch** corresponds to each local route sample.
-  Tap **Gambar sketsa** in the map, then tap map positions to compose an
-  alternate conceptual line; **Urung titik** and **Reset** also work.
-  The line connects raw points; **it is not snapped to streets**, must not
-  be used for navigation, and is not used to compute displayed example
-  distance, slope or time.
+- All six route samples show a **solid green street-following polyline**
+  calculated from the OSM road network by FOSSGIS OSRM. Foot and bicycle
+  samples use their respective routing profiles. Geometry is cached in
+  `src/features/map/road-route-data.ts`, without any randomized polygons.
+- Start and finish markers use the Material `place` vector pin rather
+  than oval circles. If the sample is a loop, start/end share one pin.
+- Tap **Gambar konsep** to temporarily draw a manual *amber dashed* line
+  which does **not** snap to roads; **Urung titik** and **Reset** work,
+  and Reset restores the road-derived sample geometry.
+- Route distance reflects the OSRM road-network model. Duration,
+  ascent, road safety and opening/access status remain unverified.
+- Sample snapshots are not active turn-by-turn navigation or tested safe
+  running/cycling courses.
 - Tap **Cari kafe OSM** to fetch nearby named `amenity=cafe` POIs from
   Overpass (approx. 1.3 km around the selected area center). Results become
   clickable pins and a short list linking to the OSM object. Search is
@@ -91,8 +98,8 @@ session. Native Android builds have intentionally been left to the user.
   and [Overpass fair-use documentation](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html)
   before shipping. Migrate production traffic to contracted/self-hosted
   tile and POI infrastructure with proper caching and rate limits.
-- No GPS tracking, waypoint-to-waypoint routing engine, verified route geometry,
-  live traffic or turn-by-turn guidance has been implemented.
+- No GPS tracking, live routing in the app, traffic data, on-site
+  verification or turn-by-turn guidance is implemented.
 
 ## Icons
 
@@ -105,11 +112,12 @@ session. Native Android builds have intentionally been left to the user.
 
 - No production backend, authentication, route directions or road verification.
 - Leaflet assets, OSM tiles and Overpass requests need internet connectivity.
-  The editor is an interactive **conceptual sketch**, not a safety review or
-  usable street-following route.
+  The manual editor remains an interactive **conceptual sketch** rather than
+  a route snapped to roads. Cached model routes are not a safety review.
 - OSM POIs are community-maintained. Presence in OSM does not verify that a
   cafe is operating, reachable, open, or participating in any offer.
-- Route distance, duration, and elevation are illustrative values.
+- Route distances are sourced from the FOSSGIS routing graph; duration,
+  elevation and difficulty scores are still illustrative estimates.
 - Reports, community interests, posts, vouchers and partner statistics are
   local-only examples, not real-world transactions or shared public data.
 

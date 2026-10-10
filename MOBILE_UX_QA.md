@@ -4,6 +4,40 @@ Date: 2026-10-10
 Target: Android-size viewport previews; actual browser engine: Edge Beta / React Native Web under Expo Metro.
 Native Android APK/build: **not executed**.
 
+## Follow-up: route card Detail arrow and visible Edge
+
+The route card's **Detail** and Material arrow appeared on separate lines
+because Expo Router `Link asChild` owns the rendered anchor and overwrites
+some direct `Pressable` layout styles on React Native Web. The fix keeps
+the accessible link but moves the horizontal row layout into a nested
+`View`, with a non-shrinking 70px action group.
+
+Using the **visible Edge Browser Use** session on port 9344 and profile
+`~/workspace/AI/EdgeProfileVisible`, screenshots were captured before and
+after this fix. Visual and DOM checks at **280, 320, 360, 390, and 428 px**
+confirmed all Detail labels and arrows occupy one line, with 6px spacing,
+no horizontal overflow, and no clipping. At widths below 300 px, route
+artwork narrows from 92 to 68 px to avoid truncating the sport label.
+Both **Lari** and **Gowes** cards have been visually inspected at 280px;
+the sport labels and Detail arrows now remain on one line. A real browser
+click on a bike Detail action successfully navigated to its route page.
+
+The connected Fedora session has no graphical display variables by default,
+so `~/workspace/AI/.bin/explorstreet-browser-visible` sets the existing
+Wayland socket and reuses a separate visible Edge instance. It also sets
+`BU_NAME=explorstreet_visible` to isolate the Browser Use daemon from the
+old headless session (otherwise the visible Edge window stays on about:blank).
+The headless test browser and the user's daily Edge profile are unaffected.
+The Niri Edge window was verified on `localhost:8084`, focused, and
+final screenshots were captured from the **visible** session at 320 and
+390 px. Both confirm all three Detail actions and icons on one line.
+
+QA evidence:
+`~/workspace/AI/.browser-use/explorstreet-qa/detail-arrow-baseline-320.png`,
+`detail-arrow-verified-{280,320,360,390,428}.png`, and
+`detail-arrow-verified.json`, `detail-arrow-bike-280.png`, plus
+`detail-arrow-visible-real-{320,390}.png`.
+
 ## Screenshot audit
 
 The workspace's required Browser Use launcher was used at

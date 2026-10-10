@@ -29,10 +29,10 @@ test('filters activity and recommends quiet routes first', () => {
 test('distance filter is a real filter, not just a sort hint', () => {
   assert.deepEqual(
     rankRoutes(routes, { ...baseline, distance: 'short' }, new Set()).map((route) => route.id),
-    ['kayu-run'],
+    ['ijen-run', 'kayu-run'],
   );
-  assert.equal(rankRoutes(routes, { ...baseline, distance: 'long' }, new Set()).length, 0);
-  assert.equal(rankRoutes(routes, { ...baseline, sport: 'bike', distance: 'long' }, new Set()).length, 2);
+  assert.equal(rankRoutes(routes, { ...baseline, distance: 'long' }, new Set()).length, 1);
+  assert.equal(rankRoutes(routes, { ...baseline, sport: 'bike', distance: 'long' }, new Set()).length, 3);
 });
 
 test('saved mode includes favorites of either activity', () => {
@@ -54,10 +54,10 @@ test('unknown route resolves to null', async () => {
 });
 
 test('custom distance constrains results inclusively and allows one-sided limits', () => {
- const custom = rankRoutes(routes,{...baseline,distance:'custom',minKm:4,maxKm:6},new Set());
+ const custom = rankRoutes(routes,{...baseline,distance:'custom',minKm:3.5,maxKm:4},new Set());
  assert.deepEqual(custom.map(route=>route.id),['ijen-run']);
- assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:7,maxKm:null},new Set()).length,0);
- assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:null,maxKm:4},new Set()).length,1);
+ assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:7,maxKm:null},new Set()).length,1);
+ assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:null,maxKm:3.5},new Set()).length,1);
 });
 
 test('selected area reorders suggestions without inventing GPS location', () => {

@@ -4,7 +4,7 @@ import {Coffee,ExternalLink,Info,MapPin} from '@/components/icons';
 import {MapSurface} from '@/components/map-surface';
 import {getAreaCenter,osmUrl} from '@/features/map/areas';
 import {buildExplorerDocument} from '@/features/map/explorer-document';
-import {demoSketch} from '@/features/map/route-sketch';
+import {roadRouteGeometry} from '@/features/map/route-sketch';
 import {useCafeSearch} from '@/features/map/use-cafe-search';
 import {font,palette} from '@/theme/tokens';
 
@@ -15,20 +15,22 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
 }){
  const {latitude,longitude}=getAreaCenter(area);
  const {lookup,load}=useCafeSearch(area);
+ const route=useMemo(()=>roadRouteGeometry(routeId),[routeId]);
  const html=useMemo(()=>buildExplorerDocument({
-  area,latitude,longitude,sketch:routeId?demoSketch(area,routeId).points:[],
-  cafes:lookup.cafes,showSketch:!!routeId,destinationMode,
+  area,latitude,longitude,sketch:route.points,
+  roadAligned:route.source==='osm-road-graph',cafes:lookup.cafes,
+  showSketch:route.source==='osm-road-graph',destinationMode,
   destination:destination?[destination.latitude,destination.longitude]:null,
- }),[area,latitude,longitude,routeId,lookup.cafes,destinationMode,destination]);
+ }),[area,latitude,longitude,route,lookup.cafes,destinationMode,destination]);
  return <View style={{gap:11}}>
    <MapSurface html={html} height={height} area={area} onDestination={onDestination}/>
    {destinationMode ? null : <>
    <View style={{flexDirection:'row',alignItems:'flex-start',gap:8}}>
      <Info size={17} color={palette.pine}/>
      <Text style={{flex:1,fontFamily:font.medium,fontSize:12,lineHeight:19,color:palette.secondaryText}}>
-       {routeId
-        ?'Garis jingga adalah sketsa contoh. Ketuk “Gambar sketsa” untuk menyusun titik sendiri; garis tidak mengikuti jalan.'
-        :'Peta jalan interaktif dengan pusat area perkiraan. Ketuk “Gambar sketsa” untuk membuat garis konsep.'}
+       {route.source==='osm-road-graph'
+        ?'Garis hijau mengikuti model jaringan jalan OSM, bukan bentuk acak. Belum disurvei untuk kondisi jalan atau keamanan. Mode gambar manual tetap hanya sketsa.'
+        :'Peta OpenStreetMap interaktif. Gunakan “Gambar konsep” jika ingin menyusun titik contoh tanpa routing.'}
      </Text>
    </View>
    <View style={{flexDirection:'row',gap:9,alignItems:'center',flexWrap:'wrap'}}>
@@ -53,7 +55,7 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
    {lookup.status==='ready'?<View style={{gap:9}}>
      <Text style={{fontFamily:font.semi,color:palette.secondaryText,fontSize:12,lineHeight:18}}>
        {lookup.cafes.length
-        ?lookup.cafes.length+' titik kafe OSM ditemukan di sekitar area '+area+'. Bukan jaminan berada tepat di sepanjang sketsa.'
+        ?lookup.cafes.length+' titik kafe OSM ditemukan di sekitar area '+area+'. Bukan jaminan berada tepat di sepanjang rute.'
         :'Belum ada kafe bernama dalam data OSM yang dikembalikan untuk area ini.'}
        {lookup.fromCache?' Data tersimpan sementara.':''}
      </Text>

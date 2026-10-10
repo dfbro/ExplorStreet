@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Pressable,ScrollView,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {ActivityIndicator,Keyboard,Pressable,ScrollView,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {SafeAreaView,useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AreaMap} from '@/components/area-map';
 import {AppHeader,AppNav} from '@/components/app-nav';
@@ -56,8 +56,15 @@ function LevelPicker({title,value,onChange}:{
 }
 
 export function RouteSearchScreen(){
- const {width}=useWindowDimensions();
+ const {width,height}=useWindowDimensions();
  const insets=useSafeAreaInsets();
+ const pageRef=useRef<ScrollView>(null);
+ const searchRef=useRef<TextInput>(null);
+ const resultsTop=useRef(0);
+ const pendingScroll=useRef(false);
+ const scrollTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const searchFocused=useRef(false);
+ const [isSearchFocused,setIsSearchFocused]=useState(false);
  const {filters,favorites,ready,saveError,clearSaveError,setSport,setDistance,
   setCustomDistance,setArea,setQuery,setSavedOnly,setWeight,toggleFavorite}=useRoutePreferences();
  const [catalog,setCatalog]=useState<readonly RouteInfo[]>([]);
@@ -82,6 +89,35 @@ export function RouteSearchScreen(){
  const recommendTitle=filters.savedOnly?'Rute tersimpan':hasQuery?'Hasil pencarian':'Rekomendasi rute';
  const onDestination=useCallback((point:{latitude:number;longitude:number})=>setDestination(point),[]);
 
+ const scrollToResults=useCallback(()=>{
+  if(scrollTimer.current)clearTimeout(scrollTimer.current);
+  scrollTimer.current=null;
+  if(!pendingScroll.current)return;
+  pendingScroll.current=false;
+  pageRef.current?.scrollTo({y:Math.max(0,resultsTop.current-14),animated:true});
+ },[]);
+ const queueResultScroll=useCallback(()=>{
+  if(!filters.query.trim())return;
+  pendingScroll.current=true;
+  if(scrollTimer.current)clearTimeout(scrollTimer.current);
+  // Fallback for web, hardware keyboards, or a keyboard that was not displayed.
+  scrollTimer.current=setTimeout(scrollToResults,360);
+ },[filters.query,scrollToResults]);
+
+ useEffect(()=>{
+  const subscription=Keyboard.addListener('keyboardDidHide',()=>{
+   if(searchFocused.current){
+    searchRef.current?.blur();
+    queueResultScroll();
+   }
+   if(pendingScroll.current)scrollToResults();
+  });
+  return()=>{
+   subscription.remove();
+  };
+ },[queueResultScroll,scrollToResults]);
+ useEffect(()=>()=>{if(scrollTimer.current)clearTimeout(scrollTimer.current);},[]);
+
  const applyDistance=()=>{
   const parsed=parseCustomDistance(minInput,maxInput);
   if(!parsed.ok){setDistanceError(parsed.error);return;}
@@ -96,9 +132,11 @@ export function RouteSearchScreen(){
  };
 
  return <SafeAreaView edges={['top']} style={{flex:1,backgroundColor:palette.background}}>
-  <ScrollView keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic"
+  <ScrollView ref={pageRef} keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic"
    contentContainerStyle={{maxWidth:900,width:'100%',alignSelf:'center',paddingHorizontal:16,
-    paddingTop:13,paddingBottom:40+insets.bottom,gap:15}}>
+    paddingTop:13,
+    // Keep enough trailing space to lift even a single search result above the bottom tabs.
+    paddingBottom:hasQuery?Math.max(380,height*.55)+insets.bottom:40+insets.bottom,gap:15}}>
    <AppHeader/>
    <View style={{gap:4,paddingTop:6}}>
     <Text style={{fontFamily:font.extra,color:palette.ink,fontSize:width<350?25:29,letterSpacing:-.7}}>
@@ -109,21 +147,37 @@ export function RouteSearchScreen(){
     </Text>
    </View>
 
-   <View style={{flexDirection:'row',alignItems:'center',gap:11,backgroundColor:palette.surface,
-     minHeight:55,borderRadius:17,borderWidth:1.5,borderColor:'#D6E7D7',paddingHorizontal:14}}>
-    <Search size={22} color={palette.pine}/>
+   <View style={{flexDirection:'row',alignItems:'center',gap:11,
+     backgroundColor:isSearchFocused?palette.forest:palette.surface,
+     minHeight:55,borderRadius:17,borderWidth:1.5,
+     borderColor:isSearchFocused?palette.pine:'#D6E7D7',paddingHorizontal:14}}>
+    <Search size={22} color={isSearchFocused?palette.white:palette.pine}/>
     <TextInput
+     ref={searchRef}
      accessibilityLabel="Cari rute atau area"
      value={filters.query}
      onChangeText={setQuery}
      placeholder="Cari rute atau area..."
-     placeholderTextColor="#718B78"
+     placeholderTextColor={isSearchFocused?'#D6E9D9':'#718B78'}
      returnKeyType="search"
-     style={{flex:1,minHeight:50,fontFamily:font.medium,color:palette.ink,fontSize:15}}
+     onFocus={()=>{searchFocused.current=true;setIsSearchFocused(true);}}
+     onBlur={()=>{
+      searchFocused.current=false;
+      setIsSearchFocused(false);
+      queueResultScroll();
+     }}
+     onSubmitEditing={()=>{
+      queueResultScroll();
+      Keyboard.dismiss();
+      searchRef.current?.blur();
+     }}
+     style={{flex:1,minHeight:50,fontFamily:font.medium,
+      backgroundColor:'transparent',color:isSearchFocused?palette.white:palette.ink,fontSize:15,
+      outlineStyle:'solid',outlineWidth:0,outlineColor:'transparent'}}
     />
     {filters.query?<Pressable onPress={()=>setQuery('')} accessibilityRole="button"
       accessibilityLabel="Hapus pencarian" style={{minWidth:42,minHeight:42,alignItems:'center',justifyContent:'center'}}>
-       <X size={19} color={palette.pine}/>
+       <X size={19} color={isSearchFocused?palette.white:palette.pine}/>
      </Pressable>:null}
    </View>
 
@@ -266,7 +320,8 @@ export function RouteSearchScreen(){
       <X size={17} color={palette.danger}/>
     </Pressable>:null}
 
-   <View style={{gap:13,marginTop:3}}>
+   <View onLayout={event=>{resultsTop.current=event.nativeEvent.layout.y;}}
+    style={{gap:13,marginTop:3}}>
     <View style={{gap:4}}>
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
       <Text style={{fontFamily:font.display,color:palette.ink,fontSize:width<350?20:23,flex:1}}>{recommendTitle}</Text>
@@ -302,7 +357,8 @@ export function RouteSearchScreen(){
    </View>
    <Text style={{fontFamily:font.medium,color:palette.tertiaryText,fontSize:11,
     lineHeight:18,textAlign:'center'}}>
-    Rute dan durasi adalah data simulasi. Titik peta bukan instruksi jalan yang terverifikasi.
+    Geometri rute dan jarak memakai model jaringan jalan OSM. Durasi dan kondisi jalan
+    belum diverifikasi; tidak ada navigasi langsung.
    </Text>
   </ScrollView>
   <AppNav/>

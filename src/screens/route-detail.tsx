@@ -111,7 +111,7 @@ export function RouteDetailScreen() {
             </Text>
             <AreaMap area={route.area} routeId={route.id} height={width > 760 ? 370 : 330}/>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
-              <DetailFact icon={RouteIcon} label="Jarak contoh" value={`${formatDistance(route.distanceKm)} km`}/>
+              <DetailFact icon={RouteIcon} label="Jarak model jalan" value={`${formatDistance(route.distanceKm)} km`}/>
               <DetailFact icon={Clock3} label="Durasi contoh" value={`${route.durationMin} mnt`}/>
               <DetailFact icon={Mountain} label="Tanjakan contoh" value={`+${route.ascentM} m`}/>
             </View>
@@ -135,8 +135,9 @@ export function RouteDetailScreen() {
               <View style={{ flex: 1, gap: 5 }}>
                 <Text style={{ color: '#76551F', fontFamily: font.bold, fontSize: 14 }}>Belum untuk navigasi</Text>
                 <Text style={{ color: '#755E39', fontFamily: font.medium, fontSize: 12, lineHeight: 19 }}>
-                  Garis jingga hanya sketsa ide, tidak mengikuti jaringan jalan.
-                  Jarak dan elevasi masih data contoh. Peta belum memberi petunjuk belok atau penilaian keselamatan.
+                  Garis hijau berasal dari routing pedestrian/sepeda di jaringan jalan OpenStreetMap.
+                  Jarak berasal dari model OSRM; elevasi dan durasi masih perkiraan contoh.
+                  Rute belum diperiksa di lapangan, bukan petunjuk keselamatan atau navigasi aktif.
                 </Text>
               </View>
             </View>

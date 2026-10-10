@@ -23,6 +23,24 @@ npx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+## Mandatory visual verification for UI changes
+
+- After each material layout edit, inspect an actual rendered screenshot, not just
+  TypeScript results, DOM presence or button clickability. If a screenshot still
+  shows the original defect, diagnose rendered element styles and iterate.
+- Use the real Edge Browser Use session when available, with the dedicated
+  profile at `~/workspace/AI/EdgeProfileVisible`. Launcher:
+  `~/workspace/AI/.bin/explorstreet-browser-visible`.
+- Verify small Android-sized widths (at least 320 and 390 px; include 280 px
+  for cramped cards), and inspect top/middle/bottom scroll positions when
+  screens scroll.
+- Explicitly check text/icon alignment, clipping, contrast, stacking,
+  card boundaries, horizontal overflow, and fixed bottom navigation.
+  Interactions are a separate check, not a substitute for a visual audit.
+- Save before/after screenshots and any measurements under
+  `~/workspace/AI/.browser-use/explorstreet-qa/`. Do not mix these with
+  production assets. Do not launch native Android builds unless requested.
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
