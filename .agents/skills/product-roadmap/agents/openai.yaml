@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Roadmap"
+  short_description: "Connect business goals and customer outcomes in a credible roadmap"
+  default_prompt: "Use $product-roadmap to create an evidence-based roadmap with explicit horizons, confidence, outcomes, and stakeholder decisions."

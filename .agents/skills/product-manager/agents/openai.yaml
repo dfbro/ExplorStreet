@@ -1,0 +1,7 @@
+interface:
+  display_name: "Product Manager"
+  short_description: "Connect business logic, requirements, delivery, and product feedback"
+  default_prompt: "Use $product-manager to connect customer evidence and business goals to a scoped, traceable product decision."
+
+policy:
+  allow_implicit_invocation: true

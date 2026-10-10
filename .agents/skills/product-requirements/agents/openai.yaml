@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Requirements"
+  short_description: "Align once, trace delivery, and escalate material exceptions"
+  default_prompt: "Use $product-requirements to align one lightweight requirement baseline, trace delivery automatically, and ask me only for material decisions."

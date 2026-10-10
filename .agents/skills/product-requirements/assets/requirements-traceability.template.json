@@ -1,0 +1,41 @@
+{
+  "product": "Product or capability name",
+  "baseline": {
+    "id": "baseline-v1",
+    "status": "DRAFT",
+    "requirement_ids": ["BO-001"],
+    "approval_evidence": []
+  },
+  "release_acceptance": {
+    "status": "PENDING",
+    "evidence": []
+  },
+  "requirements": [
+    {
+      "id": "BO-001",
+      "type": "business_outcome",
+      "title": "Observable business outcome",
+      "parent_id": null,
+      "supports": [],
+      "materiality": "MATERIAL",
+      "decision_required": false,
+      "acceptance_required": true,
+      "delivery_status": "NOT_STARTED",
+      "verification_status": "NOT_VERIFIED",
+      "acceptance_criteria": ["Observable criterion"],
+      "architecture_refs": [],
+      "blocker": null,
+      "evidence": []
+    }
+  ],
+  "work_packages": [
+    {
+      "id": "WP-001",
+      "title": "End-to-end deliverable behavior",
+      "requirement_ids": ["BO-001"],
+      "depends_on": [],
+      "status": "READY",
+      "acceptance_criteria": ["Observable delivery criterion"]
+    }
+  ]
+}
