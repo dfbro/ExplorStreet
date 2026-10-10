@@ -1,85 +1,111 @@
 # ExplorStreet
 
-Mobile-first React Native alpha for exploring recreational activities in Kota Malang.
-Route Discovery, map preview, Live Nav simulator, Pace Buddy, Pit-stop, Recap/Feed
-and the B2B merchant demo are interactive using local device state. There is
-**no live route guidance, backend, or verified trail data**.
-See [PROJECT_SETUP.md](PROJECT_SETUP.md) for product scope, agent skills, and
-validation status. The latest Android-sized visual and interaction audit is in
-[MOBILE_UX_QA.md](MOBILE_UX_QA.md), with map and POI-specific findings in
-[MAP_FEATURE_QA.md](MAP_FEATURE_QA.md). The search-first home redesign, new
-custom-distance validation and Git rollback checkpoint are documented in
-[SEARCH_HOME_QA.md](SEARCH_HOME_QA.md).
+**Mobile-first route discovery and community activity prototype for Kota Malang.**
+Explore running/cycling routes, draft a custom route on OpenStreetMap, and
+prepare cafe/store/rest checkpoints as portable JSON. Built with
+[Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/), React Native,
+Expo Router, and TypeScript.
 
-The **Studio Rute** sketch editor, distance estimate, checkpoint/promotion
-drafts, separate JSON downloads/Android shares, paste-back import, and
-future bundled JSON presets are documented in [ROUTE_PRESETS.md](ROUTE_PRESETS.md).
-Use `/studio` to prepare files to submit for the official Ijen and other
-area presets. The bundled preset manifest is intentionally empty until
-verified user-authored exports are supplied.
-The mobile screenshot, download and JSON roundtrip verification for
-this feature is in [STUDIO_JSON_QA.md](STUDIO_JSON_QA.md).
-The latest upstream sticky-bottom-navigation merge with the local
-route/checkpoint features, rollback branch, and mobile visual checks
-is documented in [REMOTE_SYNC_QA.md](REMOTE_SYNC_QA.md).
+> **Alpha / demonstration only.** This project has no production backend,
+> GPS tracking, live turn-by-turn navigation, verified route safety, or
+> verified merchant promotions. Do not use sample routes as safety guidance.
 
-## Main screen
+## What you can try
 
-- Search-first home: **search field → map/temporary destination pin →
-  bookmarks → collapsible advanced filters → recommendations**.
-- Suggestions use stored sport preferences and an explicitly selected
-  Kota Malang area; there is no implicit GPS tracking or geolocation.
-- Advanced filters offer 2–4 km, 4–7 km, >7 km, plus custom
-  minimum/maximum values (0–100 km) and quiet/flat/pit-stop priorities.
-- The selected destination pin is illustrative. Neither the pin nor
-  filter values create street-following navigation.
+| Feature | Current behavior |
+| --- | --- |
+| Route search | Search local route records, choose a Malang area, set activity, apply preset/custom distance and preference filters |
+| Map preview | Pan/zoom OpenStreetMap, select a temporary destination pin, and view six cached OSRM road-network route examples |
+| Studio Rute (`/studio`) | Draw a manual polyline, estimate straight-segment distance, and add cafe/store/rest checkpoints |
+| JSON workflow | Export separate route and checkpoint documents; paste JSON back into Studio for validation/import |
+| Bookmarks | Save route preferences and favorites locally on the device |
+| Pit-stop | Request nearby cafe points from OSM/Overpass and preview distinct checkpoint or promoted-*draft* markers |
+| Other screens | Live Nav **simulator**, Pace Buddy, Recap/Feed, and B2B partner **demo** |
 
-Built on [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/),
-React Native, Expo Router, and TypeScript.
+The home screen follows **search → map & destination → bookmarks → advanced
+filters → suggestions**. Suggestions use explicitly selected areas and local
+preferences, **not** automatic GPS location. Manual sketch lines connect
+points directly; they are **not** snapped to streets. Road-aligned examples
+are a separate, cached routing-model dataset.
 
-## Get started
+## Run locally
 
-1. Install dependencies
+Requirements: Node.js, npm, and internet access for the web map tiles.
 
-   ```bash
-   npm install
-   ```
+```fish
+git clone https://github.com/dfbro/ExplorStreet.git
+cd ExplorStreet
+npm install
+npm run web
+```
 
-2. Start Metro (no native build)
+The web preview is the quickest way to review UI changes without a native
+build. For Expo's device/emulator connection, start Metro instead:
 
-   ```bash
-   npx expo start --host lan
-   ```
+```fish
+npx expo start --host lan
+```
 
-In the output, you'll find options to open the app in a
+Expo offers development build, emulator, and (when compatible with the
+installed SDK/dependencies) Expo Go workflows. **A native Android build has
+not yet been validated for this prototype.** The existing development
+session on the project machine can be viewed with:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+```fish
+tmux attach -t explorstreet-dev
+```
 
-The entry files in `src/app/` use [file-based routing](https://docs.expo.dev/router/introduction).
-Feature logic lives in `src/features/routes/`, reusable components in
-`src/components/`, and screens in `src/screens/`.
+Detach using `Ctrl+B`, then `D`. This does not stop Metro.
 
-## Quality checks
+## Build your own route and checkpoint preset
+
+1. Open **Studio Rute** from the home screen or navigate to `/studio`.
+2. Choose an area and activity, then tap the map to add at least two points.
+   The estimate adds geographic distances between points; **it does not
+   measure the street-following distance**.
+3. Tap **Tandai checkpoint** on the map, select a location, and choose
+   `cafe`, `store`, or `rest`. An optional `promoted` flag adds a
+   promotional **draft** badge, not a verified offer.
+4. Export **route JSON** and **checkpoint JSON**. On web these are downloads;
+   on a supported native device the app invokes its share sheet.
+5. To revise the files, paste them into **Import JSON untuk diedit**,
+   loading the route first and then checkpoints with the same `routeId`.
+
+Both formats have explicit `schema` and `version: 1` fields. Route geometry
+uses GeoJSON `LineString` with **[longitude, latitude]** coordinate order.
+See [ROUTE_PRESETS.md](ROUTE_PRESETS.md) for example documents and validation.
+
+Default user-authored presets are configured in
+`src/features/map/presets/manifest.json`. Its `routes` and
+`checkpointSets` arrays are intentionally **empty** until reviewed JSON
+is provided. The six existing road-model examples are not custom presets.
+
+## Validate changes
 
 ```fish
 npx tsc --noEmit
 npm run lint
 npm run test:routes
 npm run test:map
+npm run test:editor
 npx expo-doctor
 ```
 
-## Watch the development process
+**Visual QA is required for UI work:** inspect rendered screenshots at
+mobile widths (including 320px and 390px), review scroll positions, and
+check for clipped labels, overlay collisions, and bottom-tab overlap.
+Unit tests and clickable controls alone do not establish visual correctness.
 
-```fish
-tmux attach -t explorstreet-dev
-```
+## Project layout
 
-Detach with `Ctrl+B`, then `D`; Metro continues running in the terminal
-session. Native Android builds have intentionally been left to the user.
+| Path | Responsibility |
+| --- | --- |
+| `src/app/` | File-based routes via Expo Router |
+| `src/screens/` | Search, route details, Studio, Pit-stop, Feed, and other screens |
+| `src/components/` | Shared UI and mobile/web map surfaces |
+| `src/features/routes/` | Example route catalog, ranking, and local preferences |
+| `src/features/map/` | OpenStreetMap view, JSON schemas, saved model geometry, and checkpoint logic |
+| `scripts/` | Route snapshot generator and local unit tests |
 
 ## Map experience
 
@@ -133,21 +159,19 @@ session. Native Android builds have intentionally been left to the user.
 - Reports, community interests, posts, vouchers and partner statistics are
   local-only examples, not real-world transactions or shared public data.
 
-### Additional resources
+## Design and verification notes
 
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- [PROJECT_SETUP.md](PROJECT_SETUP.md) — product scope, technology, and setup.
+- [SEARCH_HOME_QA.md](SEARCH_HOME_QA.md) — search-first design and mobile behavior.
+- [ROAD_SAMPLE_QA.md](ROAD_SAMPLE_QA.md) — origin and limits of road-network samples.
+- [MAP_FEATURE_QA.md](MAP_FEATURE_QA.md) — map/POI interactions and availability.
+- [ROUTE_PRESETS.md](ROUTE_PRESETS.md) — JSON contracts and bundled presets.
+- [STUDIO_JSON_QA.md](STUDIO_JSON_QA.md) — JSON roundtrip and mobile Studio QA.
+- [MOBILE_UX_QA.md](MOBILE_UX_QA.md) — visual regression checks.
+- [REMOTE_SYNC_QA.md](REMOTE_SYNC_QA.md) — remote-merge and bottom-navigation QA.
 
-## Learn more
+## References
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo documentation](https://docs.expo.dev/)
+- [Expo Router](https://docs.expo.dev/router/introduction/)
+- [OpenStreetMap contributors and copyright](https://www.openstreetmap.org/copyright)
