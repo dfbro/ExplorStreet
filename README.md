@@ -7,7 +7,20 @@ and the B2B merchant demo are interactive using local device state. There is
 See [PROJECT_SETUP.md](PROJECT_SETUP.md) for product scope, agent skills, and
 validation status. The latest Android-sized visual and interaction audit is in
 [MOBILE_UX_QA.md](MOBILE_UX_QA.md), with map and POI-specific findings in
-[MAP_FEATURE_QA.md](MAP_FEATURE_QA.md).
+[MAP_FEATURE_QA.md](MAP_FEATURE_QA.md). The search-first home redesign, new
+custom-distance validation and Git rollback checkpoint are documented in
+[SEARCH_HOME_QA.md](SEARCH_HOME_QA.md).
+
+## Main screen
+
+- Search-first home: **search field → map/temporary destination pin →
+  bookmarks → collapsible advanced filters → recommendations**.
+- Suggestions use stored sport preferences and an explicitly selected
+  Kota Malang area; there is no implicit GPS tracking or geolocation.
+- Advanced filters offer 2–4 km, 4–7 km, >7 km, plus custom
+  minimum/maximum values (0–100 km) and quiet/flat/pit-stop priorities.
+- The selected destination pin is illustrative. Neither the pin nor
+  filter values create street-following navigation.
 
 Built on [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/),
 React Native, Expo Router, and TypeScript.

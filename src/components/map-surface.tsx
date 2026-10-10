@@ -4,10 +4,12 @@ import WebView from 'react-native-webview';
 import {MapPinned} from '@/components/icons';
 import {font,palette,radius} from '@/theme/tokens';
 
-export function MapSurface({html,height,area}:{html:string;height:number;area:string}){
+export function MapSurface({html,height,area,onDestination}:{
+ html:string;height:number;area:string;onDestination?:(point:{latitude:number;longitude:number})=>void;
+}){
  const [failed,setFailed]=useState(false);
  return <View style={{height,borderRadius:radius.large,overflow:'hidden',backgroundColor:'#e3eee5'}}>
- {failed?<View style={{flex:1,padding:24,alignItems:'center',justifyContent:'center',gap:11}}>
+  {failed?<View style={{flex:1,padding:24,alignItems:'center',justifyContent:'center',gap:11}}>
     <MapPinned size={30} color={palette.forest}/>
     <Text style={{fontFamily:font.bold,color:palette.ink}}>Peta tidak dapat dimuat</Text>
     <Text style={{fontFamily:font.medium,fontSize:12,color:palette.secondaryText,textAlign:'center'}}>
@@ -31,6 +33,17 @@ export function MapSurface({html,height,area}:{html:string;height:number;area:st
     startInLoadingState
     onError={()=>setFailed(true)}
     onHttpError={e=>{if(e.nativeEvent.statusCode>=400)setFailed(true);}}
+    onMessage={event=>{
+      if(!onDestination)return;
+      try{
+        const message=JSON.parse(event.nativeEvent.data);
+        if(message.type==='explorstreet:destination' &&
+          typeof message.latitude==='number'&&typeof message.longitude==='number' &&
+          Number.isFinite(message.latitude)&&Number.isFinite(message.longitude)){
+          onDestination({latitude:message.latitude,longitude:message.longitude});
+        }
+      }catch{}
+    }}
   />}
  </View>;
 }

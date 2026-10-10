@@ -8,6 +8,8 @@ export interface ExplorerMapPayload {
  sketch:LatLng[];
  cafes:OsmCafe[];
  showSketch:boolean;
+ destinationMode?:boolean;
+ destination?:LatLng|null;
 }
 
 const documentTemplate = `<!doctype html>
@@ -38,6 +40,8 @@ box-shadow:0 1px 7px #0004;display:flex;justify-content:center;align-items:cente
 font:800 13px system-ui,sans-serif;color:#935926}
 .start-pin{width:17px;height:17px;background:#174c37;border:3px solid white;border-radius:50%;
 box-shadow:0 0 0 2px #174c37}
+.destination-pin{width:22px;height:22px;border-radius:50%;background:#eb7427;border:4px solid white;
+box-shadow:0 0 0 2px #cb5c0d,0 3px 8px #0003}
 .leaflet-popup-content{margin:11px!important;font:13px/1.5 system-ui,sans-serif;color:#20382d}
 .leaflet-popup-content a{color:#236d4c;font-weight:700}
 #fallback{display:none;position:absolute;inset:0;z-index:1200;background:#e7f1e6;color:#174c37;
@@ -48,6 +52,7 @@ padding:25px;align-items:center;justify-content:center;text-align:center;font:60
 <div id="map" aria-label="Peta interaktif OpenStreetMap"></div>
 <div id="feedback" role="status"></div>
 <div class="map-control" id="controls">
+ <button type="button" id="destination" style="display:none" aria-label="Pilih titik tujuan pada peta">Pilih tujuan</button>
  <button type="button" id="draw" aria-label="Gambar sketsa rute">Gambar sketsa</button>
  <button type="button" id="undo" aria-label="Batalkan titik terakhir" disabled>Urung titik</button>
  <button type="button" id="reset" aria-label="Reset sketsa rute">Reset</button>
@@ -80,6 +85,37 @@ const startIcon=L.divIcon({html:'<span class="start-pin"></span>',className:'',i
 let points=payload.showSketch?payload.sketch.map(p=>p.slice()):[];
 const initial=points.map(p=>p.slice());
 let drawing=false,layer=null,startMarker=null;
+let pickingDestination=false;
+const destinationButton=document.getElementById('destination');
+const destinationIcon=L.divIcon({html:'<span class="destination-pin"></span>',className:'',iconSize:[28,28],iconAnchor:[14,14]});
+let destinationMarker=null;
+function showDestination(latlng){
+ if(destinationMarker)map.removeLayer(destinationMarker);
+ destinationMarker=L.marker(latlng,{icon:destinationIcon,title:'Titik tujuan sementara'}).addTo(map);
+}
+if(payload.destination)showDestination(payload.destination);
+if(payload.destinationMode){
+ document.getElementById('draw').style.display='none';
+ document.getElementById('undo').style.display='none';
+ document.getElementById('reset').style.display='none';
+ document.getElementById('legend').style.display='none';
+ destinationButton.style.display='block';
+ destinationButton.addEventListener('click',function(event){
+  event.stopPropagation();
+  pickingDestination=!pickingDestination;
+  destinationButton.classList.toggle('active',pickingDestination);
+  destinationButton.textContent=pickingDestination?'Ketuk peta':'Pilih tujuan';
+ });
+}
+function emitDestination(latlng){
+ const message=JSON.stringify({type:'explorstreet:destination',
+  latitude:Number(latlng.lat.toFixed(6)),longitude:Number(latlng.lng.toFixed(6))});
+ if(window.ReactNativeWebView&&window.ReactNativeWebView.postMessage){
+  window.ReactNativeWebView.postMessage(message);
+ }else if(window.parent!==window){
+  window.parent.postMessage(message,'*');
+ }
+}
 const drawButton=document.getElementById('draw'),undoButton=document.getElementById('undo'),sketchStatus=document.getElementById('sketch-status');
 function refresh(){
  if(layer)map.removeLayer(layer);
@@ -114,6 +150,14 @@ document.getElementById('reset').addEventListener('click',function(event){
  if(layer)map.fitBounds(layer.getBounds().pad(.25),{maxZoom:16,animate:false});
 });
 map.on('click',function(event){
+ if(payload.destinationMode&&pickingDestination){
+  showDestination(event.latlng);
+  pickingDestination=false;
+  destinationButton.classList.remove('active');
+  destinationButton.textContent='Ubah tujuan';
+  emitDestination(event.latlng);
+  return;
+ }
  if(!drawing)return;
  if(points.length>=16)return;
  points.push([Number(event.latlng.lat.toFixed(6)),Number(event.latlng.lng.toFixed(6))]);

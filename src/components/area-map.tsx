@@ -8,17 +8,21 @@ import {demoSketch} from '@/features/map/route-sketch';
 import {useCafeSearch} from '@/features/map/use-cafe-search';
 import {font,palette} from '@/theme/tokens';
 
-export function AreaMap({area,height=300,routeId,compact=false}:{
+export function AreaMap({area,height=300,routeId,compact=false,destinationMode=false,destination=null,onDestination}:{
  area:string;height?:number;routeId?:string;compact?:boolean;
+ destinationMode?:boolean;destination?:{latitude:number;longitude:number}|null;
+ onDestination?:(point:{latitude:number;longitude:number})=>void;
 }){
  const {latitude,longitude}=getAreaCenter(area);
  const {lookup,load}=useCafeSearch(area);
  const html=useMemo(()=>buildExplorerDocument({
   area,latitude,longitude,sketch:routeId?demoSketch(area,routeId).points:[],
-  cafes:lookup.cafes,showSketch:!!routeId,
- }),[area,latitude,longitude,routeId,lookup.cafes]);
+  cafes:lookup.cafes,showSketch:!!routeId,destinationMode,
+  destination:destination?[destination.latitude,destination.longitude]:null,
+ }),[area,latitude,longitude,routeId,lookup.cafes,destinationMode,destination]);
  return <View style={{gap:11}}>
-   <MapSurface html={html} height={height} area={area}/>
+   <MapSurface html={html} height={height} area={area} onDestination={onDestination}/>
+   {destinationMode ? null : <>
    <View style={{flexDirection:'row',alignItems:'flex-start',gap:8}}>
      <Info size={17} color={palette.pine}/>
      <Text style={{flex:1,fontFamily:font.medium,fontSize:12,lineHeight:19,color:palette.secondaryText}}>
@@ -72,5 +76,6 @@ export function AreaMap({area,height=300,routeId,compact=false}:{
        Status buka, akses pejalan kaki, dan fasilitas kafe belum diverifikasi langsung.
      </Text>
    </View>:null}
+   </>}
  </View>;
 }

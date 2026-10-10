@@ -1,5 +1,5 @@
-import { RouteDiscoveryScreen } from '@/screens/route-discovery';
+import { RouteSearchScreen } from '@/screens/route-search';
 
 export default function HomeScreen() {
-  return <RouteDiscoveryScreen />;
+  return <RouteSearchScreen />;
 }

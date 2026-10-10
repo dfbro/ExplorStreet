@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { routeRepository } from '../src/features/routes/repository.ts';
 import { rankRoutes } from '../src/features/routes/ranking.ts';
+import { parseCustomDistance } from '../src/features/routes/custom-distance.ts';
 
 const routes = await routeRepository.list();
 const baseline = {
@@ -50,4 +51,27 @@ test('search filters by area and name without changing inputs', () => {
 
 test('unknown route resolves to null', async () => {
   assert.equal(await routeRepository.find('does-not-exist'), null);
+});
+
+test('custom distance constrains results inclusively and allows one-sided limits', () => {
+ const custom = rankRoutes(routes,{...baseline,distance:'custom',minKm:4,maxKm:6},new Set());
+ assert.deepEqual(custom.map(route=>route.id),['ijen-run']);
+ assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:7,maxKm:null},new Set()).length,0);
+ assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:null,maxKm:4},new Set()).length,1);
+});
+
+test('selected area reorders suggestions without inventing GPS location', () => {
+ const selected=rankRoutes(routes,{...baseline,area:'Kayutangan'},new Set());
+ assert.equal(selected[0].area,'Kayutangan');
+ assert.equal(selected.length,3);
+});
+
+test('custom distance input validates range, decimals, and blank bounds', () => {
+ assert.deepEqual(parseCustomDistance('3,5','8'),{ok:true,minKm:3.5,maxKm:8});
+ assert.deepEqual(parseCustomDistance('','6'),{ok:true,minKm:null,maxKm:6});
+ assert.equal(parseCustomDistance('','').ok,false);
+ assert.equal(parseCustomDistance('9','3').ok,false);
+ assert.equal(parseCustomDistance('-1','5').ok,false);
+ assert.equal(parseCustomDistance('abc','5').ok,false);
+ assert.equal(parseCustomDistance('1','101').ok,false);
 });
