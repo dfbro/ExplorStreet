@@ -1,5 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Bike, Bookmark, BookmarkCheck, Check, Clock3, Footprints, Info, MapPin, Mountain, Play, Route as RouteIcon, ShieldAlert } from '@/components/icons';
+import { Bike, Bookmark, BookmarkCheck, Check, Clock3, Footprints, Info, MapPin, Mountain, Play, Plus, Route as RouteIcon, ShieldAlert } from '@/components/icons';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { AreaMap } from '@/components/area-map';
@@ -147,6 +147,8 @@ export function RouteDetailScreen() {
             </View> : null}
             <Action label="Coba simulator navigasi" icon={Play}
               onPress={() => router.push({pathname:'/nav',params:{route:route.id}})}/>
+            <Action label="Buat sketsa & checkpoint JSON sendiri" icon={Plus}
+              onPress={() => router.push('/studio')}/>
             <Pressable onPress={() => toggleFavorite(route.id)} accessibilityRole="button"
               accessibilityState={{ selected: saved }}
               style={({ pressed }) => ({

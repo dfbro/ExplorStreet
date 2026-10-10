@@ -1,4 +1,5 @@
-import {Bike,Coffee,Gift,MapPin,Tag,X} from '@/components/icons';
+import {Bike,Coffee,Gift,MapPin,Plus,Tag,X} from '@/components/icons';
+import {router} from 'expo-router';
 import {useMemo,useState} from 'react';
 import {Modal,Pressable,Text,View} from 'react-native';
 import {AppPage} from '@/components/app-page';
@@ -26,6 +27,8 @@ export function PitStopsScreen(){
    </View>
    <AreaMap area={cafeArea} height={260} compact/>
   </Panel>
+  <Action label="Tambah checkpoint/toko dan ekspor JSON" icon={Plus}
+   onPress={()=>router.push('/studio')}/>
   <Panel>
    <Heading icon={Coffee}>Cari tempat rehat</Heading>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>

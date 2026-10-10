@@ -1,10 +1,11 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Keyboard,Pressable,ScrollView,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {SafeAreaView,useSafeAreaInsets} from 'react-native-safe-area-context';
+import {router} from 'expo-router';
 import {AreaMap} from '@/components/area-map';
 import {AppHeader,AppNav} from '@/components/app-nav';
 import {RouteCard} from '@/components/route-card';
-import {Bike,BookmarkCheck,Check,ChevronRight,Footprints,Info,MapPin,Search,SlidersHorizontal,X} from '@/components/icons';
+import {Bike,BookmarkCheck,Check,ChevronRight,Footprints,Info,MapPin,Plus,Search,SlidersHorizontal,X} from '@/components/icons';
 import {parseCustomDistance} from '@/features/routes/custom-distance';
 import {DEFAULT_FILTERS,PRIORITY_TEXT,type DistanceBand,type Priority,type RouteInfo} from '@/features/routes/model';
 import {useRoutePreferences} from '@/features/routes/preferences';
@@ -146,7 +147,6 @@ export function RouteSearchScreen(){
      Jelajahi rute lari dan gowes di Kota Malang.
     </Text>
    </View>
-
    <View style={{flexDirection:'row',alignItems:'center',gap:11,
      backgroundColor:isSearchFocused?palette.forest:palette.surface,
      minHeight:55,borderRadius:17,borderWidth:1.5,
@@ -225,6 +225,16 @@ export function RouteSearchScreen(){
      {favorites.size} tersimpan
     </Text>
     {filters.savedOnly?<Check size={17} color={palette.forest}/>:<ChevronRight size={18} color={palette.pine}/>}
+   </Pressable>
+
+   <Pressable accessibilityRole="button" onPress={()=>router.push('/studio')}
+    style={({pressed})=>({minHeight:49,borderRadius:14,backgroundColor:palette.pale,
+     paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:9,opacity:pressed?.75:1})}>
+     <Plus size={21} color={palette.forest}/>
+     <Text style={{fontFamily:font.bold,color:palette.forest,fontSize:13,flex:1}}>
+      Buat rute & checkpoint JSON
+     </Text>
+     <ChevronRight size={19} color={palette.pine}/>
    </Pressable>
 
    <View style={{borderRadius:17,borderWidth:1,borderColor:palette.line,backgroundColor:palette.surface,

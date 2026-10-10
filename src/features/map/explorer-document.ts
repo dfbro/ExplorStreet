@@ -1,5 +1,10 @@
 import type {OsmCafe} from './cafes';
 import type {LatLng} from './route-sketch';
+import type {GeoPoint,StoreCheckpoint} from './editor-json';
+
+export type MapEditorEvent =
+ | {type:'explorstreet:sketch';coordinates:GeoPoint[]}
+ | {type:'explorstreet:checkpoint-point';coordinates:GeoPoint};
 
 export interface ExplorerMapPayload {
  area:string;
@@ -11,6 +16,8 @@ export interface ExplorerMapPayload {
  roadAligned?:boolean;
  destinationMode?:boolean;
  destination?:LatLng|null;
+ editorMode?:boolean;
+ editorCheckpoints?:StoreCheckpoint[];
 }
 
 const documentTemplate = `<!doctype html>
@@ -30,6 +37,9 @@ html,body,#map{width:100%;height:100%;padding:0;margin:0;background:#dfeae0;font
 padding:10px 12px;min-height:43px;font:700 12px system-ui,-apple-system,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.13);cursor:pointer}
 .map-control button.active{background:#174c37;color:#fff}
 .map-control button:disabled{opacity:.5;cursor:default}
+.map-control.editor-controls{left:10px;right:10px;max-width:none;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.map-control.editor-controls button{padding:7px 9px;min-height:42px}
 #legend{position:absolute;z-index:900;left:10px;bottom:26px;max-width:185px;padding:10px 11px;
 border-radius:12px;background:rgba(255,255,255,.96);color:#174c37;font:700 11px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 2px 8px #0002}
 #legend small{font-size:10px;display:block;color:#526f5c;font-weight:500;margin-top:3px}
@@ -50,6 +60,7 @@ padding:25px;align-items:center;justify-content:center;text-align:center;font:60
 <div id="feedback" role="status"></div>
 <div class="map-control" id="controls">
  <button type="button" id="destination" style="display:none" aria-label="Pilih titik tujuan pada peta">Pilih tujuan</button>
+ <button type="button" id="add-stop" style="display:none" aria-label="Tambahkan checkpoint">Tandai checkpoint</button>
  <button type="button" id="draw" aria-label="Gambar konsep manual">Gambar konsep</button>
  <button type="button" id="undo" aria-label="Batalkan titik terakhir" disabled>Urung titik</button>
  <button type="button" id="reset" aria-label="Reset sketsa rute">Reset</button>
@@ -89,11 +100,14 @@ function pinIcon(color,cssClass){
 const startIcon=pinIcon('#15794e','start-pin');
 let points=payload.showSketch?payload.sketch.map(p=>p.slice()):[];
 const initial=points.map(p=>p.slice());
-let drawing=false,layer=null,startMarker=null,endMarker=null;
+let drawing=payload.editorMode===true,layer=null,startMarker=null,endMarker=null;
 let isRoadRoute=payload.roadAligned===true;
 let pickingDestination=false;
+let pickingCheckpoint=false,checkpointMarker=null;
+let checkpointMarkers=[];
 const destinationButton=document.getElementById('destination');
 const destinationIcon=pinIcon('#eb7427','destination-pin');
+const checkpointIcon=pinIcon('#935926','cafe-pin');
 let destinationMarker=null;
 function showDestination(latlng){
  if(destinationMarker)map.removeLayer(destinationMarker);
@@ -113,16 +127,64 @@ if(payload.destinationMode){
   destinationButton.textContent=pickingDestination?'Ketuk peta':'Pilih tujuan';
  });
 }
-function emitDestination(latlng){
- const message=JSON.stringify({type:'explorstreet:destination',
-  latitude:Number(latlng.lat.toFixed(6)),longitude:Number(latlng.lng.toFixed(6))});
+function emit(message){
+ const serialized=JSON.stringify(message);
  if(window.ReactNativeWebView&&window.ReactNativeWebView.postMessage){
-  window.ReactNativeWebView.postMessage(message);
+  window.ReactNativeWebView.postMessage(serialized);
  }else if(window.parent!==window){
-  window.parent.postMessage(message,'*');
+  window.parent.postMessage(serialized,'*');
  }
 }
+function emitDestination(latlng){
+ emit({type:'explorstreet:destination',latitude:Number(latlng.lat.toFixed(6)),
+  longitude:Number(latlng.lng.toFixed(6))});
+}
 const drawButton=document.getElementById('draw'),undoButton=document.getElementById('undo'),sketchStatus=document.getElementById('sketch-status');
+const stopsButton=document.getElementById('add-stop');
+if(payload.editorMode){
+ document.getElementById('controls').classList.add('editor-controls');
+ drawButton.textContent='Selesai gambar';
+ drawButton.classList.add('active');
+ stopsButton.style.display='block';
+ document.getElementById('reset').textContent='Kosongkan rute';
+ document.getElementById('route-disclaimer').textContent='Jarak sketsa ≠ jarak jalan. Belum mengikuti ruas jalan.';
+}
+function distanceKm(coords){
+ let km=0;
+ for(let i=1;i<coords.length;i++)km+=map.distance(coords[i-1],coords[i])/1000;
+ return Math.round(km*1000)/1000;
+}
+function emitSketch(){
+ if(payload.editorMode)emit({type:'explorstreet:sketch',
+  coordinates:points.map(([lat,lon])=>[lon,lat])});
+}
+function setCheckpoints(items){
+ if(checkpointMarker){map.removeLayer(checkpointMarker);checkpointMarker=null;}
+ for(const marker of checkpointMarkers)map.removeLayer(marker);
+ checkpointMarkers=[];
+ if(!Array.isArray(items))return;
+ for(const stop of items.slice(0,50)){
+  if(!stop||!Array.isArray(stop.coordinates)||stop.coordinates.length!==2)continue;
+  const [lon,lat]=stop.coordinates;
+  if(!Number.isFinite(lat)||!Number.isFinite(lon))continue;
+  const marker=L.marker([lat,lon],{icon:checkpointIcon,title:String(stop.name||'Checkpoint')});
+  const content=document.createElement('div'),name=document.createElement('strong');
+  name.textContent=String(stop.name||'Checkpoint');content.appendChild(name);
+  if(stop.promoted){
+   const promo=document.createElement('div');
+   promo.textContent='Promosi (draft, belum diverifikasi)';
+   content.appendChild(promo);
+  }
+  marker.bindPopup(content).addTo(map);checkpointMarkers.push(marker);
+ }
+}
+window.__explorstreetSetCheckpoints=setCheckpoints;
+window.addEventListener('message',event=>{
+ let msg=event.data;
+ if(typeof msg==='string'){try{msg=JSON.parse(msg);}catch{return;}}
+ if(msg?.type==='explorstreet:update-checkpoints')setCheckpoints(msg.checkpoints);
+});
+setCheckpoints(payload.editorCheckpoints||[]);
 function refresh(){
  if(layer)map.removeLayer(layer);
  if(startMarker)map.removeLayer(startMarker);
@@ -142,6 +204,8 @@ function refresh(){
  undoButton.disabled=!drawing||points.length===0;
  if(drawing){
   sketchStatus.textContent='Ketuk peta untuk menambah titik ('+points.length+')';
+ }else if(payload.editorMode){
+  sketchStatus.textContent=points.length+' titik • estimasi '+distanceKm(points).toFixed(2)+' km';
  }else{
   sketchStatus.textContent=points.length
    ?(isRoadRoute?'Garis hijau: rute dari jaringan jalan':'Garis jingga: konsep manual')
@@ -149,25 +213,52 @@ function refresh(){
  }
  document.getElementById('route-disclaimer').textContent=isRoadRoute
   ?'OSRM foot/bike • belum disurvei, bukan panduan keselamatan.'
-  :'Konsep manual tidak mengikuti jalan dan bukan navigasi.';
+  :'Sketsa garis lurus antar titik, bukan rute jalan atau navigasi.';
+ if(payload.editorMode){
+  document.getElementById('route-disclaimer').textContent='Estimasi '+distanceKm(points).toFixed(2)+' km • garis lurus per segmen.';
+ }
+ emitSketch();
 }
 function toggle(){
  drawing=!drawing;
- if(drawing){points=[];isRoadRoute=false;}
- drawButton.textContent=drawing?'Selesai konsep':'Gambar konsep';
+ if(drawing&&!payload.editorMode){points=[];isRoadRoute=false;}
+ pickingCheckpoint=false;stopsButton.classList.remove('active');
+ stopsButton.textContent='Tandai checkpoint';
+ drawButton.textContent=drawing?(payload.editorMode?'Selesai gambar':'Selesai konsep'):'Gambar konsep';
  drawButton.classList.toggle('active',drawing);
  map.getContainer().style.cursor=drawing?'crosshair':'grab';
  refresh();
 }
 drawButton.addEventListener('click',function(event){event.stopPropagation();toggle();});
 undoButton.addEventListener('click',function(event){event.stopPropagation();if(drawing)points.pop();refresh();});
+stopsButton.addEventListener('click',function(event){
+ event.stopPropagation();
+ pickingCheckpoint=!pickingCheckpoint;
+ drawing=false;drawButton.classList.remove('active');drawButton.textContent='Gambar konsep';
+ stopsButton.classList.toggle('active',pickingCheckpoint);
+ stopsButton.textContent=pickingCheckpoint?'Ketuk peta':'Tandai checkpoint';
+ refresh();
+});
 document.getElementById('reset').addEventListener('click',function(event){
- event.stopPropagation();drawing=false;points=initial.map(p=>p.slice());
- isRoadRoute=payload.roadAligned===true;
- drawButton.textContent='Gambar konsep';drawButton.classList.remove('active');refresh();
+ event.stopPropagation();drawing=payload.editorMode===true;
+ points=payload.editorMode?[]:initial.map(p=>p.slice());
+ isRoadRoute=payload.roadAligned===true&&!payload.editorMode;
+ pickingCheckpoint=false;stopsButton.classList.remove('active');
+ stopsButton.textContent='Tandai checkpoint';
+ drawButton.textContent=drawing?'Selesai gambar':'Gambar konsep';
+ drawButton.classList.toggle('active',drawing);refresh();
  if(layer)map.fitBounds(layer.getBounds().pad(.25),{maxZoom:16,animate:false});
 });
 map.on('click',function(event){
+ if(payload.editorMode&&pickingCheckpoint){
+  pickingCheckpoint=false;stopsButton.classList.remove('active');
+  stopsButton.textContent='Tandai checkpoint';
+  if(checkpointMarker)map.removeLayer(checkpointMarker);
+  checkpointMarker=L.marker(event.latlng,{icon:checkpointIcon,title:'Checkpoint belum disimpan'}).addTo(map);
+  emit({type:'explorstreet:checkpoint-point',coordinates:[
+   Number(event.latlng.lng.toFixed(6)),Number(event.latlng.lat.toFixed(6))]});
+  return;
+ }
  if(payload.destinationMode&&pickingDestination){
   showDestination(event.latlng);
   pickingDestination=false;
@@ -177,7 +268,7 @@ map.on('click',function(event){
   return;
  }
  if(!drawing)return;
- if(points.length>=16)return;
+ if(points.length>=(payload.editorMode?120:16))return;
  points.push([Number(event.latlng.lat.toFixed(6)),Number(event.latlng.lng.toFixed(6))]);
  refresh();
 });
