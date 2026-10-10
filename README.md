@@ -19,6 +19,9 @@ area presets. The bundled preset manifest is intentionally empty until
 verified user-authored exports are supplied.
 The mobile screenshot, download and JSON roundtrip verification for
 this feature is in [STUDIO_JSON_QA.md](STUDIO_JSON_QA.md).
+The latest upstream sticky-bottom-navigation merge with the local
+route/checkpoint features, rollback branch, and mobile visual checks
+is documented in [REMOTE_SYNC_QA.md](REMOTE_SYNC_QA.md).
 
 ## Main screen
 
