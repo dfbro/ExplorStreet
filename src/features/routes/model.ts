@@ -19,6 +19,7 @@ export interface RouteInfo {
   tags: string[];
   verification: 'sample'|'unverified';
   bundledDefault?: boolean;
+  manualSketch?:boolean;
 }
 
 export interface RouteWeights {

@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 
 import { RoutePreferencesProvider } from '@/features/routes/preferences';
 import { DemoProvider } from '@/features/demo/demo-store';
+import {PresetStoreProvider} from '@/features/map/preset-store';
 import { font, palette } from '@/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
@@ -32,6 +33,7 @@ export default function RootLayout() {
 
   return (
     <RoutePreferencesProvider>
+      <PresetStoreProvider>
       <DemoProvider>
       <StatusBar style="dark"/>
       <Stack screenOptions={{
@@ -47,9 +49,11 @@ export default function RootLayout() {
         <Stack.Screen name="stops" options={{ headerShown: false }}/>
         <Stack.Screen name="feed" options={{ headerShown: false }}/>
         <Stack.Screen name="partner" options={{ headerShown: false }}/>
+        <Stack.Screen name="admin" options={{ headerShown: false }}/>
         <Stack.Screen name="routes/[id]" options={{ title: 'Detail rute', headerBackTitle: 'Kembali' }}/>
       </Stack>
       </DemoProvider>
+      </PresetStoreProvider>
     </RoutePreferencesProvider>
   );
 }

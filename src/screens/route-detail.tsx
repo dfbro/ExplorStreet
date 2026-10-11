@@ -9,6 +9,7 @@ import type { RouteInfo } from '@/features/routes/model';
 import { useRoutePreferences } from '@/features/routes/preferences';
 import { formatDistance } from '@/features/routes/ranking';
 import { routeRepository } from '@/features/routes/repository';
+import {usePresetStore} from '@/features/map/preset-store';
 import { font, palette, radius } from '@/theme/tokens';
 
 type DetailState =
@@ -31,6 +32,7 @@ function DetailFact({ icon: Icon, value, label }: {
 }
 
 export function RouteDetailScreen() {
+  const {routes:storedRoutes,ready:presetsReady}=usePresetStore();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
   const { favorites, ready, toggleFavorite, saveError } = useRoutePreferences();
@@ -44,11 +46,12 @@ export function RouteDetailScreen() {
       Promise.resolve().then(() => { if (active) setState({ status: 'missing' }); });
       return () => { active = false; };
     }
-    routeRepository.find(id)
+    if(!presetsReady)return()=>{active=false;};
+    routeRepository.find(id,storedRoutes)
       .then((route) => { if (active) setState(route ? { status: 'ready', route } : { status: 'missing' }); })
       .catch(() => { if (active) setState({ status: 'error' }); });
     return () => { active = false; };
-  }, [id]);
+  }, [id,storedRoutes,presetsReady]);
 
   const route = state.status === 'ready' && state.route.id === id ? state.route : null;
   useEffect(() => {
@@ -103,7 +106,7 @@ export function RouteDetailScreen() {
                 {route.name}
               </Text>
               <View style={{ backgroundColor: palette.pale, borderRadius: 50, paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Text style={{ fontFamily: font.bold, fontSize: 11, color: palette.forest }}>{route.bundledDefault?'Preset default':'Contoh'}</Text>
+                <Text style={{ fontFamily: font.bold, fontSize: 11, color: palette.forest }}>{route.bundledDefault?'Preset default':route.manualSketch?'Rute pribadi':'Contoh'}</Text>
               </View>
             </View>
             <Text style={{ fontFamily: font.medium, fontSize: 14, color: palette.secondaryText, lineHeight: 22 }}>
@@ -111,7 +114,7 @@ export function RouteDetailScreen() {
             </Text>
             <AreaMap area={route.area} routeId={route.id} height={width > 760 ? 370 : 330}/>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
-              <DetailFact icon={RouteIcon} label={route.bundledDefault?'Estimasi sketsa':'Jarak model jalan'} value={`${formatDistance(route.distanceKm)} km`}/>
+              <DetailFact icon={RouteIcon} label={route.manualSketch?'Estimasi sketsa':'Jarak model jalan'} value={`${formatDistance(route.distanceKm)} km`}/>
               {route.durationMin!==undefined?<DetailFact icon={Clock3} label="Durasi contoh" value={`${route.durationMin} mnt`}/>:null}
               {route.ascentM!==undefined?<DetailFact icon={Mountain} label="Tanjakan contoh" value={`+${route.ascentM} m`}/>:null}
             </View>
@@ -135,7 +138,7 @@ export function RouteDetailScreen() {
               <View style={{ flex: 1, gap: 5 }}>
                 <Text style={{ color: '#76551F', fontFamily: font.bold, fontSize: 14 }}>Belum untuk navigasi</Text>
                 <Text style={{ color: '#755E39', fontFamily: font.medium, fontSize: 12, lineHeight: 19 }}>
-                  {route.bundledDefault
+                  {route.manualSketch
                    ?'Garis ungu putus-putus adalah sketsa pengguna, bukan jalur yang disesuaikan ke jalan. Jarak merupakan estimasi antartitik, bukan jarak jalan. Belum ada data elevasi atau durasi. Lokasi checkpoint dan rute belum diverifikasi; bukan navigasi aktif.'
                    :'Garis hijau berasal dari routing pedestrian/sepeda di jaringan jalan OpenStreetMap. Jarak berasal dari model OSRM; elevasi dan durasi masih perkiraan contoh. Rute belum diperiksa di lapangan, bukan petunjuk keselamatan atau navigasi aktif.'}
                 </Text>
@@ -147,7 +150,7 @@ export function RouteDetailScreen() {
             </View> : null}
             <Action label={route.bundledDefault?'Lihat simulator generik (bukan rute ini)':'Coba simulator navigasi'} icon={Play}
               onPress={() => router.push({pathname:'/nav',params:{route:route.id}})}/>
-            <Action label="Buat sketsa & checkpoint JSON sendiri" icon={Plus}
+            <Action label="Buat dan simpan rute sendiri" icon={Plus}
               onPress={() => router.push('/studio')}/>
             <Pressable onPress={() => toggleFavorite(route.id)} accessibilityRole="button"
               accessibilityState={{ selected: saved }}

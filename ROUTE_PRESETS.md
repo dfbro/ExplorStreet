@@ -97,8 +97,8 @@ from the existing OpenStreetMap cafe markers.
 `src/features/map/presets/manifest.json` has two arrays:
 
 ```json
-{"routes":[{"id":"draft-1791640851016","title":"Ijen default route"}],
- "checkpointSets":[{"routeId":"draft-1791640851016","checkpoints":[{"name":"Warung bakso Mas Aji"}]}]}
+{"routes":[{"id":"ijen-run","title":"Ijen Morning Loop"}],
+ "checkpointSets":[{"routeId":"ijen-run","checkpoints":[{"name":"Warung bakso Mas Aji"}]}]}
 ```
 
 The abbreviated illustration above shows the keys only; the actual
@@ -113,15 +113,20 @@ Other areas may be added with validated documents using the same schema.
 Checkpoint documents must reference an existing route ID. A route ID
 is unique, and one checkpoint document may be attached to each route.
 
-The app's `getDefaultPresets()` validates entries. The submitted Ijen
-sketch now appears in the **route search catalog and route detail map**,
-alongside six previous OSRM demo routes. It is ranked first for the
-default running recommendations and labeled `Preset default`.
+The app's `getDefaultPresets()` validates entries. The submitted Ijen sketch
+**replaces** the original `ijen-run` demo in route search and route detail,
+keeping that ID for bookmarks. Five other OSRM demo routes remain. The Ijen
+route is ranked first for the default running recommendations and labeled
+`Preset default`.
 It uses a **dashed purple polyline with a light outline**, not the solid green OSRM
 road-network line. Its detail screen deliberately omits fabricated
 duration and elevation.
 
-Studio can load the same preset for editing. Pit-stop displays its
+User Studio makes personal copies of managed routes and saves to local
+AsyncStorage, without showing JSON or promotion controls. Admin Studio
+edits the shared preset, its checkpoint/promoted flags, and JSON data.
+The User/Admin switch does not provide secure authorization.
+Pit-stop displays its
 checkpoint as a location pin and a named non-promoted entry for Ijen.
 The route detail map also renders the pin. No marker, place name,
 promotion, road access, or route safety is independently verified.

@@ -6,6 +6,7 @@ import {getAreaCenter,osmUrl} from '@/features/map/areas';
 import {buildExplorerDocument} from '@/features/map/explorer-document';
 import {roadRouteGeometry} from '@/features/map/route-sketch';
 import {getRouteCheckpoints} from '@/features/map/presets';
+import {usePresetStore} from '@/features/map/preset-store';
 import {useCafeSearch} from '@/features/map/use-cafe-search';
 import type {StoreCheckpoint} from '@/features/map/editor-json';
 import {font,palette} from '@/theme/tokens';
@@ -17,10 +18,12 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
  onDestination?:(point:{latitude:number;longitude:number})=>void;
  checkpointPresets?:StoreCheckpoint[];
 }){
+ const {routes:storedRoutes,checkpointSets}=usePresetStore();
+ const shared=useMemo(()=>({routes:storedRoutes,checkpointSets}),[storedRoutes,checkpointSets]);
  const {latitude,longitude}=getAreaCenter(area);
  const {lookup,load}=useCafeSearch(area);
- const route=useMemo(()=>roadRouteGeometry(routeId),[routeId]);
- const bundledCheckpoints=useMemo(()=>routeId?getRouteCheckpoints(routeId):EMPTY_CHECKPOINTS,[routeId]);
+ const route=useMemo(()=>roadRouteGeometry(routeId,storedRoutes),[routeId,storedRoutes]);
+ const bundledCheckpoints=useMemo(()=>routeId?getRouteCheckpoints(routeId,shared):EMPTY_CHECKPOINTS,[routeId,shared]);
  const html=useMemo(()=>buildExplorerDocument({
   area,latitude,longitude,sketch:route.points,
   roadAligned:route.source==='osm-road-graph',cafes:lookup.cafes,

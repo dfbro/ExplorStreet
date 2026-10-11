@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { ArrowUpRight, Bike, Bookmark, Check, Clock3, Footprints, MapPin, Mountain, Route as RouteIcon } from '@/components/icons';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import type { RouteInfo } from '@/features/routes/model';
@@ -18,17 +18,20 @@ export function RouteCard({ route, featured, saved, onToggleSave }: {
     <View style={{
       borderWidth: 1.5, borderColor: featured ? '#8ABF86' : palette.line,
       borderRadius: radius.large, backgroundColor: palette.surface,
-      padding: 12, flexDirection: 'row', gap: 13,
+      position:'relative',overflow:'hidden',
     }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`Buka rute ${route.name}`}
+      onPress={()=>router.push({pathname:'/routes/[id]',params:{id:route.id}})}
+      style={({pressed})=>({padding:12,flexDirection:'row',gap:13,opacity:pressed?.83:1})}>
       <RouteArtwork accent={route.accent} sport={route.sport}
         width={width < 300 ? 68 : 92} height={width < 300 ? 116 : 130} />
       <View style={{ flex: 1, minWidth: 0, justifyContent: 'space-between', paddingVertical: 3 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingRight: 38 }}>
           <MapPin size={13} color={palette.pine} />
           <Text style={{ fontFamily: font.semi, fontSize: 12, color: palette.secondaryText }}>{route.area}</Text>
-          {featured||route.bundledDefault ? <View style={{ backgroundColor: palette.pale, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8 }}>
+          {featured||route.manualSketch ? <View style={{ backgroundColor: palette.pale, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8 }}>
             <Text style={{ color: palette.forest, fontFamily: font.bold, fontSize: 10 }}>
-              {route.bundledDefault?'Preset default':'Urutan 1'}
+              {route.bundledDefault?'Preset default':route.manualSketch?'Rute pribadi':'Urutan 1'}
             </Text>
           </View> : null}
         </View>
@@ -58,24 +61,20 @@ export function RouteCard({ route, featured, saved, onToggleSave }: {
             </Text>
           </View>
           <View style={{ marginLeft: 'auto', flexShrink: 0 }}>
-            <Link href={{ pathname: '/routes/[id]', params: { id: route.id } }} asChild>
-              <Pressable accessibilityLabel={`Lihat detail ${route.name}`} hitSlop={4}>
-                {/* Expo Router's Link/asChild owns the anchor; keep layout on the inner View. */}
                 <View style={{
                   minWidth: 70, minHeight: 42, flexDirection: 'row', flexWrap: 'nowrap',
                   gap: 6, alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 2,
                 }}>
                   <Text numberOfLines={1} style={{
                     flexShrink: 0, fontFamily: font.bold, color: palette.forest, fontSize: 12,
-                  }}>Detail</Text>
+                  }}>Buka</Text>
                   <ArrowUpRight size={16} color={palette.forest} />
                 </View>
-              </Pressable>
-            </Link>
           </View>
         </View>
       </View>
-      <Pressable onPress={onToggleSave} accessibilityRole="button"
+    </Pressable>
+      <Pressable onPress={(event)=>{event.stopPropagation();onToggleSave();}} accessibilityRole="button"
         accessibilityLabel={saved ? `Hapus ${route.name} dari simpanan` : `Simpan ${route.name}`}
         accessibilityState={{ selected: saved }} hitSlop={8}
         style={({ pressed }) => ({

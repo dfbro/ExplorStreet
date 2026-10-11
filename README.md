@@ -15,9 +15,9 @@ Expo Router, and TypeScript.
 | Feature | Current behavior |
 | --- | --- |
 | Route search | Search local route records, choose a Malang area, set activity, apply preset/custom distance and preference filters |
-| Map preview | Pan/zoom OpenStreetMap, select a temporary destination pin, and view six cached OSRM road-network route examples |
-| Studio Rute (`/studio`) | Draw a manual polyline, estimate straight-segment distance, and add cafe/store/rest checkpoints |
-| JSON workflow | Export separate route and checkpoint documents; paste JSON back into Studio for validation/import |
+| Map preview | Pan/zoom OpenStreetMap, select a destination, and view five cached OSRM examples plus the custom Ijen Morning Loop |
+| User Studio (`/studio`) | Draw a route and save it locally without JSON controls or promotion management |
+| Admin Studio (`/admin`) | Manage shared presets and promoted stops, with JSON import/export |
 | Bookmarks | Save route preferences and favorites locally on the device |
 | Pit-stop | Request nearby cafe points from OSM/Overpass and preview distinct checkpoint or promoted-*draft* markers |
 | Other screens | Live Nav **simulator**, Pace Buddy, Recap/Feed, and B2B partner **demo** |
@@ -57,9 +57,25 @@ tmux attach -t explorstreet-dev
 
 Detach using `Ctrl+B`, then `D`. This does not stop Metro.
 
-## Build your own route and checkpoint preset
+## User and Admin workflow
 
-1. Open **Studio Rute** from the home screen or navigate to `/studio`.
+Use the **User/Admin switch at the top-right header** to change the local
+interface. Both modes share a validated AsyncStorage collection on the same
+device (`explorstreet.shared-presets.v1`). Updates are visible after switching
+mode or reloading, but are **not synced across devices** without a backend.
+The toggle is a demo UI, **not secure admin authentication**.
+
+**User mode:** draw a route and select **Simpan rute ke perangkat**. Selecting
+an Admin-managed default first creates a *personal copy*, so saving will
+not replace the original default route or its promoted checkpoints.
+
+**Admin mode:** select a saved route, manage cafe/store/rest locations and
+mark promotional entries as **unverified drafts**, then select **Simpan
+preset & checkpoint**. Only Admin mode displays JSON import/export actions.
+
+## Admin JSON workflow
+
+1. Switch to **Admin** and use its Studio at `/admin`.
 2. Choose an area and activity, then tap the map to add at least two points.
    The estimate adds geographic distances between points; **it does not
    measure the street-following distance**.
@@ -80,11 +96,16 @@ Default user-authored presets are configured in
 route has been imported with ten manual vertices (3.553 km straight-
 segment estimate) and a single unpromoted cafe checkpoint, **Warung bakso
 Mas Aji**. It is available in route search, detail map, Studio, and
-Ijen Pit-stop. The six previous road-model examples remain separate;
+Ijen Pit-stop. It **replaces** the previous Ijen Morning Loop under the
+same `ijen-run` ID, preserving old bookmarks. Five other OSRM demo routes
+remain available;
 the uploaded sketch is **not road-snapped or field-verified**. See
 [ROUTE_PRESETS.md](ROUTE_PRESETS.md) for its raw JSON sources.
 The Ijen import's data provenance, unit tests and mobile map screenshots
 are documented in [IJEN_PRESET_QA.md](IJEN_PRESET_QA.md).
+The current User/Admin storage separation, Ijen overwrite and interaction
+tests are documented in [USER_ADMIN_QA.md](USER_ADMIN_QA.md). The older Ijen
+QA note is a historical snapshot from before the in-place replacement.
 
 ## Validate changes
 

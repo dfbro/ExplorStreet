@@ -62,8 +62,8 @@ test('bundled Ijen default preserves both user-submitted documents',()=>{
  const checkpointDoc=presets.checkpointSets[0];
  const sourceRoute=JSON.parse(readFileSync(new URL('../src/features/map/presets/source/ijen-default-route.json',import.meta.url),'utf8'));
  const sourceCheckpoints=JSON.parse(readFileSync(new URL('../src/features/map/presets/source/ijen-default-checkpoints.json',import.meta.url),'utf8'));
- assert.deepEqual(route,validateRouteJson(sourceRoute));
- assert.deepEqual(checkpointDoc,validateCheckpointJson(sourceCheckpoints));
+ assert.deepEqual(route,validateRouteJson({...sourceRoute,id:'ijen-run',title:'Ijen Morning Loop'}));
+ assert.deepEqual(checkpointDoc,validateCheckpointJson({...sourceCheckpoints,routeId:'ijen-run'}));
  assert.equal(route.id,checkpointDoc.routeId);
  assert.equal(route.distance.roadSnapped,false);
  assert.equal(route.distance.estimatedKm,3.553);
@@ -76,11 +76,11 @@ test('bundled Ijen default preserves both user-submitted documents',()=>{
  assert.equal(getDefaultCheckpoints('Kayutangan').length,0);
 });
 test('the imported route renders as an unsnapped manual sketch (longitude to latitude order)',()=>{
- const {points,source,distanceKm}=roadRouteGeometry('draft-1791640851016');
+ const {points,source,distanceKm}=roadRouteGeometry('ijen-run');
  assert.equal(source,'manual-sketch');
  assert.equal(distanceKm,3.553);
  assert.equal(points.length,10);
  assert.deepEqual(points[0],[-7.97207,112.621708]);
  assert.equal(Number(straightLineKm(points).toFixed(3)),3.553);
- assert.equal(roadRouteGeometry('ijen-run').source,'osm-road-graph');
+ assert.equal(roadRouteGeometry('kayu-run').source,'osm-road-graph');
 });

@@ -11,6 +11,7 @@ import {DEFAULT_FILTERS,PRIORITY_TEXT,type DistanceBand,type Priority,type Route
 import {useRoutePreferences} from '@/features/routes/preferences';
 import {rankRoutes} from '@/features/routes/ranking';
 import {routeRepository} from '@/features/routes/repository';
+import {usePresetStore} from '@/features/map/preset-store';
 import {font,palette,radius} from '@/theme/tokens';
 
 const AREAS=['Ijen','Kayutangan','Lowokwaru','Blimbing','Sukun'];
@@ -57,6 +58,7 @@ function LevelPicker({title,value,onChange}:{
 }
 
 export function RouteSearchScreen(){
+ const {routes:storedRoutes,ready:presetsReady}=usePresetStore();
  const {width,height}=useWindowDimensions();
  const insets=useSafeAreaInsets();
  const pageRef=useRef<ScrollView>(null);
@@ -79,10 +81,11 @@ export function RouteSearchScreen(){
 
  useEffect(()=>{
   let active=true;
-  routeRepository.list().then(routes=>{if(active){setCatalog(routes);setLoadState('ready');}})
+  if(!presetsReady)return;
+  routeRepository.list(storedRoutes).then(routes=>{if(active){setCatalog(routes);setLoadState('ready');}})
    .catch(()=>{if(active)setLoadState('error');});
   return()=>{active=false;};
- },[reload]);
+ },[reload,storedRoutes,presetsReady]);
 
  const results=useMemo(()=>rankRoutes(catalog,filters,favorites),[catalog,filters,favorites]);
  const area=filters.area??'Ijen';
@@ -232,7 +235,7 @@ export function RouteSearchScreen(){
      paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:9,opacity:pressed?.75:1})}>
      <Plus size={21} color={palette.forest}/>
      <Text style={{fontFamily:font.bold,color:palette.forest,fontSize:13,flex:1}}>
-      Buat rute & checkpoint JSON
+      Buat dan simpan rute sendiri
      </Text>
      <ChevronRight size={19} color={palette.pine}/>
    </Pressable>

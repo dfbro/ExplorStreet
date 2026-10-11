@@ -21,12 +21,10 @@ export function getDefaultPresets():DefaultPresets{
   return {routes:[],checkpointSets:[],error:error instanceof Error?error.message:'Preset JSON tidak valid.'};
  }
 }
-export function getDefaultCheckpoints(area:string):StoreCheckpoint[]{
- const presets=getDefaultPresets();
+export function getDefaultCheckpoints(area:string,presets:DefaultPresets=getDefaultPresets()):StoreCheckpoint[]{
  const selected=new Set(presets.routes.filter(r=>r.area===area).map(r=>r.id));
  return presets.checkpointSets.filter(set=>selected.has(set.routeId)).flatMap(set=>set.checkpoints);
 }
-export function getRouteCheckpoints(routeId:string):StoreCheckpoint[]{
- const presets=getDefaultPresets();
+export function getRouteCheckpoints(routeId:string,presets:DefaultPresets=getDefaultPresets()):StoreCheckpoint[]{
  return presets.checkpointSets.find(set=>set.routeId===routeId)?.checkpoints??[];
 }

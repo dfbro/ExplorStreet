@@ -64,7 +64,8 @@ export function RoutePreferencesProvider({ children }: { children: React.ReactNo
           },
         }));
         if (Array.isArray(decoded.favorites)) {
-          setFavorites(new Set(decoded.favorites.filter((id): id is string => typeof id === 'string')));
+          setFavorites(new Set(decoded.favorites.filter((id): id is string => typeof id === 'string')
+            .map(id=>id==='draft-1791640851016'?'ijen-run':id)));
         }
       })
       .catch(() => { if (active) setSaveError('Preferensi tidak dapat dimuat dari perangkat.'); })

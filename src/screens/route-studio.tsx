@@ -1,12 +1,13 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Stack} from 'expo-router';
+import {Stack,router} from 'expo-router';
 import {ActivityIndicator,Pressable,ScrollView,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {MapSurface} from '@/components/map-surface';
 import {Check,Coffee,Info,MapPin,Plus,Route as RouteIcon,Store,Tag,X} from '@/components/icons';
 import {getAreaCenter} from '@/features/map/areas';
 import {buildExplorerDocument,type MapEditorEvent} from '@/features/map/explorer-document';
-import {getDefaultPresets} from '@/features/map/presets';
+import {usePresetStore} from '@/features/map/preset-store';
+import {AppHeader} from '@/components/app-nav';
 import {exportJsonFile} from '@/features/map/export-file';
 import {
  estimateSketchKm,makeRouteJson,makeCheckpointJson,parseEditorJson,
@@ -15,8 +16,6 @@ import {
 import {font,palette,radius} from '@/theme/tokens';
 
 const AREAS=['Ijen','Kayutangan','Lowokwaru','Blimbing','Sukun'];
-const storageKey='explorstreet.editor.v1';
-const builtIn=getDefaultPresets();
 const kindLabels:Record<CheckpointKind,string>={cafe:'Kafe',store:'Toko',rest:'Tempat rehat'};
 type SavedDraft={id:string;title:string;area:string;activity:RouteActivity;
  points:GeoPoint[];checkpoints:StoreCheckpoint[]};
@@ -55,7 +54,10 @@ function FormInput({label,value,onChangeText,placeholder,multiline=false}:{
  </View>;
 }
 
-export function RouteStudioScreen(){
+export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
+ const {mode,routes:storedRoutes,checkpointSets,saveRoute,deleteRoute}=usePresetStore();
+ const isAdmin=adminMode&&mode==='admin';
+ const storageKey=isAdmin?'explorstreet.editor.admin.v1':'explorstreet.editor.v1';
  const {width}=useWindowDimensions();
  const [ready,setReady]=useState(false);
  const [routeId,setRouteId]=useState(()=>`draft-${Date.now()}`);
@@ -68,6 +70,7 @@ export function RouteStudioScreen(){
  });
  const [checkpoints,setCheckpoints]=useState<StoreCheckpoint[]>([]);
  const [pendingPoint,setPendingPoint]=useState<GeoPoint|null>(null);
+ const [editingStopId,setEditingStopId]=useState<string|null>(null);
  const [storeName,setStoreName]=useState('');
  const [kind,setKind]=useState<CheckpointKind>('cafe');
  const [promoted,setPromoted]=useState(false);
@@ -99,21 +102,31 @@ export function RouteStudioScreen(){
     const draftPoints=Array.isArray(parsed.points)&&parsed.points.length<=120
       ?parsed.points.filter(p=>Array.isArray(p)&&p.length===2&&p.every(n=>Number.isFinite(n))
         &&p[0]>=-180&&p[0]<=180&&p[1]>=-90&&p[1]<=90):[];
-    const checked=makeCheckpointJson(parsed.id,Array.isArray(parsed.checkpoints)?parsed.checkpoints:[]);
-    setRouteId(parsed.id);setTitle(parsed.title);setArea(parsed.area);setActivity(parsed.activity);
+    const id=parsed.id==='draft-1791640851016'?'ijen-run':parsed.id;
+    const checked=makeCheckpointJson(id,Array.isArray(parsed.checkpoints)?parsed.checkpoints:[]);
+    setRouteId(id);setTitle(parsed.title==='Ijen default route'?'Ijen Morning Loop':parsed.title);
+    setArea(parsed.area);setActivity(parsed.activity);
     setPoints(draftPoints);setCheckpoints(checked.checkpoints);
     setMapSeed({area:parsed.area,points:draftPoints,revision:1});
+   }else if(isAdmin&&storedRoutes[0]){
+    const preset=storedRoutes[0];
+    setRouteId(preset.id);setTitle(preset.title);setArea(preset.area);setActivity(preset.activity);
+    setPoints(preset.geometry.coordinates);
+    setCheckpoints(checkpointSets.find(s=>s.routeId===preset.id)?.checkpoints??[]);
+    setMapSeed({area:preset.area,points:preset.geometry.coordinates,revision:1});
    }
   }).catch(()=>setFeedback('Draf tersimpan tidak dapat dibaca; mulai dengan rute kosong.'))
   .finally(()=>{if(!cancelled)setReady(true);});
   return()=>{cancelled=true;};
- },[]);
+ // The mode has a separate editing draft. Shared presets live in PresetStoreProvider.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[storageKey]);
  useEffect(()=>{
   if(!ready)return;
   const data:SavedDraft={id:routeId,title,area,activity,points,checkpoints};
   AsyncStorage.setItem(storageKey,JSON.stringify(data))
    .catch(()=>setFeedback('Gagal menyimpan draf ke perangkat.'));
- },[ready,routeId,title,area,activity,points,checkpoints]);
+ },[ready,routeId,title,area,activity,points,checkpoints,storageKey]);
 
  const center=getAreaCenter(mapSeed.area);
  const mapHtml=useMemo(()=>buildExplorerDocument({
@@ -125,6 +138,7 @@ export function RouteStudioScreen(){
  }),[mapSeed.revision,mapSeed.area]);
  const distanceKm=estimateSketchKm(points);
  const resetPlaceForm=()=>{
+  setEditingStopId(null);
   setPendingPoint(null);setStoreName('');setKind('cafe');setPromoted(false);setPromoText('');setNotes('');
  };
  const addCheckpoint=()=>{
@@ -132,14 +146,16 @@ export function RouteStudioScreen(){
   if(!storeName.trim()){setFeedback('Isi nama kafe, toko, atau tempat rehat.');return;}
   if(checkpoints.length>=50){setFeedback('Maksimal 50 checkpoint dalam satu rute.');return;}
   const item:StoreCheckpoint={
-   id:`stop-${Date.now()}`,name:storeName.trim().slice(0,100),kind,coordinates:pendingPoint,
-   promoted,promoText:promoted?promoText.trim().slice(0,300):'',notes:notes.trim().slice(0,400),
+   id:editingStopId??`stop-${Date.now()}`,name:storeName.trim().slice(0,100),kind,coordinates:pendingPoint,
+   promoted:isAdmin&&promoted,promoText:isAdmin&&promoted?promoText.trim().slice(0,300):'',
+   notes:notes.trim().slice(0,400),
    verification:'unverified',
   };
-  setCheckpoints(previous=>[...previous,item]);
+  setCheckpoints(previous=>[...previous.filter(stop=>stop.id!==item.id),item]);
   resetPlaceForm();setFeedback('Checkpoint tersimpan di draf dan akan ikut diekspor.');
  };
  const handleExport=async(type:'route'|'checkpoints')=>{
+  if(!isAdmin)return;
   if(type==='route'&&points.length<2){setFeedback('Buat minimal 2 titik sketsa sebelum ekspor rute.');return;}
   setBusy(true);setFeedback('');
   try{
@@ -153,6 +169,7 @@ export function RouteStudioScreen(){
   }finally{setBusy(false);}
  };
  const handleImport=()=>{
+  if(!isAdmin)return;
   try{
    const doc=parseEditorJson(importText);
    if(doc.schema==='explorstreet.route'){
@@ -176,36 +193,63 @@ export function RouteStudioScreen(){
   }
   setArea(next);setMapSeed(prev=>({area:next,points:[],revision:prev.revision+1}));
  };
- const choosePreset=(id:string)=>{
-  const route=builtIn.routes.find(item=>item.id===id);
+ const choosePreset=(id:string,personalId:string)=>{
+  const route=storedRoutes.find(item=>item.id===id);
   if(!route)return;
-  setRouteId(route.id);setTitle(route.title);setArea(route.area);setActivity(route.activity);
+  const isOwnCopy=!isAdmin&&route.id.startsWith('user-');
+  const destinationId=isAdmin||isOwnCopy?route.id:personalId;
+  setRouteId(destinationId);
+  setTitle(isAdmin||isOwnCopy?route.title:`${route.title} (versiku)`);
+  setArea(route.area);setActivity(route.activity);
   setPoints(route.geometry.coordinates);
-  setCheckpoints(builtIn.checkpointSets.find(set=>set.routeId===route.id)?.checkpoints??[]);
+  setCheckpoints(checkpointSets.find(set=>set.routeId===route.id)?.checkpoints??[]);
   resetPlaceForm();
   setMapSeed(prev=>({area:route.area,points:route.geometry.coordinates,revision:prev.revision+1}));
-  setFeedback('Salinan preset dimuat ke editor. Data asli tidak berubah.');
+  setFeedback(isAdmin||isOwnCopy?'Rute dimuat. Tekan Simpan setelah mengubahnya.':
+   'Salinan pribadi dibuat. Rute bawaan dan checkpoint Admin tetap tidak berubah.');
+ };
+ const saveToDevice=()=>{
+  if(points.length<2){setFeedback('Tambahkan minimal dua titik pada peta.');return;}
+  try{
+   const userNeedsCopy=!isAdmin&&!routeId.startsWith('user-');
+   const nextId=userNeedsCopy?`user-${Date.now()}`:routeId;
+   const nextTitle=userNeedsCopy&&storedRoutes.some(r=>r.id===routeId)
+     ?`${title.trim()||'Rute buatanku'} (versiku)`:title.trim()||'Rute buatanku';
+   saveRoute(makeRouteJson({id:nextId,title:nextTitle,area,activity,coordinates:points}),checkpoints);
+   if(userNeedsCopy){setRouteId(nextId);setTitle(nextTitle);}
+   setFeedback(isAdmin?'Preset dan checkpoint disimpan ke storage bersama.':'Rute disimpan dan langsung tersedia pada pencarian.');
+  }catch(error){setFeedback(error instanceof Error?error.message:'Gagal menyimpan.');}
+ };
+ const togglePromoted=(id:string)=>setCheckpoints(previous=>previous.map(item=>item.id===id
+  ?{...item,promoted:!item.promoted,promoText:item.promoted?'':item.promoText}:item));
+ const editStop=(item:StoreCheckpoint)=>{
+  setEditingStopId(item.id);setPendingPoint(item.coordinates);
+  setStoreName(item.name);setKind(item.kind);setPromoted(item.promoted);
+  setPromoText(item.promoText);setNotes(item.notes);
+  scroller.current?.scrollTo({y:Math.max(0,formY.current-15),animated:true});
  };
  return <>
-  <Stack.Screen options={{title:'Studio Rute'}}/>
+  <Stack.Screen options={{title:isAdmin?'Admin • Studio':'Studio Rute'}}/>
   <ScrollView ref={scroller} keyboardShouldPersistTaps="handled"
    style={{flex:1,backgroundColor:palette.background}}
    contentContainerStyle={{maxWidth:850,width:'100%',alignSelf:'center',padding:16,
     paddingBottom:65,gap:17}}>
+   <AppHeader/>
    <View style={{gap:6}}>
-    <Text style={{fontFamily:font.extra,color:palette.forest,fontSize:width<350?27:32}}>Studio Rute</Text>
+    <Text style={{fontFamily:font.extra,color:palette.forest,fontSize:width<350?27:32}}>{isAdmin?'Admin • Studio':'Studio Rute'}</Text>
     <Text style={{fontFamily:font.medium,color:palette.secondaryText,fontSize:13,lineHeight:20}}>
-     Gambar jalur, ukur estimasinya, lalu tandai pit-stop. Draf tersimpan di perangkat.
+     {isAdmin?'Kelola preset, checkpoint, dan promosi draft yang terlihat di mode User.':'Gambar rute, tandai pit-stop, lalu simpan ke perangkat.'}
     </Text>
    </View>
-   {builtIn.routes.length>0?<View style={{backgroundColor:palette.surface,
+   {isAdmin?<Btn label="Lihat dashboard mitra (simulasi)" onPress={()=>router.push('/partner')}/>:null}
+   {storedRoutes.length>0?<View style={{backgroundColor:palette.surface,
     borderWidth:1,borderColor:palette.line,borderRadius:radius.large,padding:14,gap:10}}>
-    <SectionTitle>Preset bawaan</SectionTitle>
+    <SectionTitle>{isAdmin?'Kelola preset tersimpan':'Rute tersimpan'}</SectionTitle>
     <Text style={{fontFamily:font.medium,color:palette.secondaryText,fontSize:12}}>
-     Pilih preset untuk membuat salinan yang bisa diedit dan diekspor.
+     Pilih rute untuk melihat atau mengeditnya.
     </Text>
-    {builtIn.routes.map(route=><Pressable key={route.id} accessibilityRole="button"
-      onPress={()=>choosePreset(route.id)}
+    {storedRoutes.map(route=><Pressable key={route.id} accessibilityRole="button"
+      onPress={()=>choosePreset(route.id,`user-${Date.now()}`)}
       style={{minHeight:46,padding:10,borderRadius:12,backgroundColor:palette.pale,
        flexDirection:'row',alignItems:'center',gap:7}}>
       <RouteIcon size={18} color={palette.pine}/>
@@ -215,9 +259,6 @@ export function RouteStudioScreen(){
       </Text>
      </Pressable>)}
    </View>:null}
-   {builtIn.error?<Text style={{fontFamily:font.medium,color:palette.danger,fontSize:12}}>
-     Preset bawaan tidak dapat dimuat: {builtIn.error}
-    </Text>:null}
    <View style={{backgroundColor:palette.surface,borderRadius:radius.large,
     padding:15,gap:13,borderWidth:1,borderColor:palette.line}}>
     <FormInput label="Nama rute" value={title} onChangeText={setTitle} placeholder="Contoh: Ijen sore"/>
@@ -280,20 +321,20 @@ export function RouteStudioScreen(){
         {(['cafe','store','rest'] as CheckpointKind[]).map(k=>
           <Choice key={k} label={kindLabels[k]} active={kind===k} onPress={()=>setKind(k)}/>)}
        </View>
-       <Pressable accessibilityRole="checkbox" accessibilityState={{checked:promoted}}
+       {isAdmin?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:promoted}}
         onPress={()=>setPromoted(v=>!v)}
         style={{minHeight:45,flexDirection:'row',gap:10,alignItems:'center'}}>
         <View style={{width:23,height:23,borderRadius:7,borderWidth:1.5,
          borderColor:palette.forest,backgroundColor:promoted?palette.forest:'white',
          justifyContent:'center',alignItems:'center'}}>{promoted?<Check size={18} color="white"/>:null}</View>
         <Text style={{fontFamily:font.bold,color:palette.forest,flex:1}}>Tandai sebagai promosi (draft)</Text>
-       </Pressable>
-       {promoted?<FormInput label="Deskripsi promosi (belum diverifikasi)"
+       </Pressable>:null}
+       {isAdmin&&promoted?<FormInput label="Deskripsi promosi (belum diverifikasi)"
         value={promoText} onChangeText={setPromoText} placeholder="Contoh: penawaran mitra"/>:null}
        <FormInput label="Catatan opsional" value={notes} onChangeText={setNotes}
         placeholder="Fasilitas atau titik istirahat" multiline/>
        <View style={{flexDirection:'row',gap:8}}>
-        <View style={{flex:1}}><Btn label="Simpan checkpoint" filled onPress={addCheckpoint}/></View>
+        <View style={{flex:1}}><Btn label={editingStopId?'Perbarui checkpoint':'Simpan checkpoint'} filled onPress={addCheckpoint}/></View>
         <Btn label="Batal" onPress={resetPlaceForm}/>
        </View>
       </View>:null}
@@ -310,6 +351,19 @@ export function RouteStudioScreen(){
          {kindLabels[item.kind]}{item.promoted?' • Promosi draft':''}
         </Text>
        </View>
+       {isAdmin?<Pressable accessibilityRole="button"
+        accessibilityLabel={`Edit checkpoint ${item.name}`}
+        onPress={()=>editStop(item)}
+        style={{minHeight:42,paddingHorizontal:7,justifyContent:'center'}}>
+         <Text style={{fontFamily:font.bold,color:palette.pine,fontSize:11}}>Edit</Text>
+       </Pressable>:null}
+       {isAdmin?<Pressable accessibilityRole="button"
+        accessibilityLabel={item.promoted?`Nonaktifkan promosi ${item.name}`:`Promosikan ${item.name}`}
+        onPress={()=>togglePromoted(item.id)}
+        style={{paddingHorizontal:8,minHeight:42,backgroundColor:item.promoted?'#F4E3A9':palette.pale,
+         borderRadius:11,justifyContent:'center'}}>
+        <Text style={{fontFamily:font.bold,fontSize:10,color:palette.forest}}>{item.promoted?'Promoted':'Promosikan'}</Text>
+       </Pressable>:null}
        <Pressable accessibilityRole="button" accessibilityLabel={`Hapus checkpoint ${item.name}`}
         onPress={()=>setCheckpoints(prev=>prev.filter(p=>p.id!==item.id))}
         style={{width:44,height:44,alignItems:'center',justifyContent:'center'}}>
@@ -318,6 +372,17 @@ export function RouteStudioScreen(){
       </View>)}
    </View>
    <View style={{backgroundColor:palette.surface,padding:16,gap:12,
+    borderRadius:radius.large,borderWidth:1,borderColor:palette.line}}>
+    <SectionTitle>{isAdmin?'Simpan perubahan preset':'Simpan rute'}</SectionTitle>
+    <Text style={{fontFamily:font.medium,color:palette.secondaryText,fontSize:12,lineHeight:19}}>
+     Data disimpan di perangkat ini dan dibaca oleh katalog mode User.
+    </Text>
+    <Btn filled label={isAdmin?'Simpan preset & checkpoint':'Simpan rute ke perangkat'} onPress={saveToDevice}/>
+    {isAdmin&&!['ijen-run','kayu-run','sukun-run','lowok-bike','blimbing-bike','ijen-bike'].includes(routeId)
+      &&storedRoutes.some(r=>r.id===routeId)
+     ?<Btn label="Hapus preset ini" onPress={()=>{deleteRoute(routeId);setFeedback('Preset dihapus dari perangkat.');}}/>:null}
+   </View>
+   {isAdmin?<View style={{backgroundColor:palette.surface,padding:16,gap:12,
     borderRadius:radius.large,borderWidth:1,borderColor:palette.line}}>
     <View style={{flexDirection:'row',alignItems:'center',gap:8}}>
       <Tag size={19} color={palette.pine}/><SectionTitle>Ekspor JSON</SectionTitle>
@@ -330,8 +395,8 @@ export function RouteStudioScreen(){
      <Btn label={`Ekspor checkpoint (.json) — ${checkpoints.length}`} onPress={()=>void handleExport('checkpoints')} disabled={busy}/>
     </View>
     {busy?<ActivityIndicator color={palette.pine}/>:null}
-   </View>
-   <View style={{backgroundColor:palette.surface,borderRadius:radius.large,
+   </View>:null}
+   {isAdmin?<View style={{backgroundColor:palette.surface,borderRadius:radius.large,
     padding:15,gap:12,borderWidth:1,borderColor:palette.line}}>
     <Pressable accessibilityRole="button" onPress={()=>setImportOpen(v=>!v)}
      style={{minHeight:42,flexDirection:'row',alignItems:'center',gap:9}}>
@@ -344,7 +409,7 @@ export function RouteStudioScreen(){
       multiline placeholder='{"schema":"explorstreet.route",...}'/>
      <Btn filled label="Validasi dan impor" onPress={handleImport}/>
     </View>:null}
-   </View>
+   </View>:null}
    {feedback?<View style={{padding:13,backgroundColor:palette.pale,borderRadius:13,
     flexDirection:'row',alignItems:'flex-start',gap:9}}>
     <Info size={18} color={palette.forest}/>

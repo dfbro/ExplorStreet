@@ -3,8 +3,8 @@
     {
       "schema": "explorstreet.route",
       "version": 1,
-      "id": "draft-1791640851016",
-      "title": "Ijen default route",
+      "id": "ijen-run",
+      "title": "Ijen Morning Loop",
       "area": "Ijen",
       "activity": "run",
       "geometry": {
@@ -64,7 +64,7 @@
     {
       "schema": "explorstreet.checkpoints",
       "version": 1,
-      "routeId": "draft-1791640851016",
+      "routeId": "ijen-run",
       "checkpoints": [
         {
           "id": "stop-1791680332375",

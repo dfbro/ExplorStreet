@@ -10,9 +10,9 @@ export interface RoadRoute {
   distanceKm?:number;
 }
 
-export function roadRouteGeometry(routeId?:string):RoadRoute {
+export function roadRouteGeometry(routeId?:string,presets=getDefaultPresets().routes):RoadRoute {
   if(!routeId)return {source:'none',points:[]};
-  const userPreset=getDefaultPresets().routes.find(route=>route.id===routeId);
+  const userPreset=presets.find(route=>route.id===routeId);
   if(userPreset){
    return {source:'manual-sketch',distanceKm:userPreset.distance.estimatedKm,
     profile:userPreset.activity==='run'?'foot':'bike',

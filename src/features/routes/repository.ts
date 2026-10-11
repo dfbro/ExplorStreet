@@ -1,6 +1,7 @@
 import type { RouteInfo } from './model';
 import {roadRouteData} from '../map/road-route-data.ts';
 import {getDefaultPresets} from '../map/presets.ts';
+import type {RouteSketchJson} from '../map/editor-json.ts';
 
 // Distances below are based on cached FOSSGIS OSRM road-graph routes.
 // Durations, ascent and condition scores remain illustrative and unverified.
@@ -54,26 +55,32 @@ const seed: readonly RouteInfo[] = [
     accent: 'lime', tags: ['Gowes', 'Hijau'], verification: 'sample',
   },
 ];
-const defaultRoutes:RouteInfo[]=getDefaultPresets().routes.map(route=>({
+function asRouteInfo(route:RouteSketchJson):RouteInfo{return {
  id:route.id,name:route.title,area:route.area,sport:route.activity,
  distanceKm:route.distance.estimatedKm,
  quietScore:0,flatScore:0,stopScore:0,
  summary:`Preset ${route.area} dari sketsa pengguna, dengan checkpoint tersimpan.`,
  notes:'Rute berasal dari titik yang digambar manual. Estimasi jarak menggunakan segmen lurus Haversine, bukan ruas jalan. Waktu, elevasi, akses jalan, dan lokasi singgah belum diverifikasi.',
- accent:'lime',tags:['Preset', 'Sketsa manual'],verification:'unverified',bundledDefault:true,
-}));
-const catalog:readonly RouteInfo[]=[...defaultRoutes,...seed];
+ accent:'lime',tags:['Sketsa manual',route.id.startsWith('user-')?'Rute pribadi':'Preset'],verification:'unverified',
+ manualSketch:true,bundledDefault:!route.id.startsWith('user-'),
+};}
+export function buildRouteCatalog(presets:readonly RouteSketchJson[]):RouteInfo[]{
+ const overrides=new Map(presets.map(route=>[route.id,asRouteInfo(route)]));
+ const base=seed.map(route=>overrides.get(route.id)??route);
+ return [...base,...presets.filter(route=>!seed.some(old=>old.id===route.id)).map(asRouteInfo)];
+}
+const catalog:readonly RouteInfo[]=buildRouteCatalog(getDefaultPresets().routes);
 
 export interface RouteRepository {
-  list(): Promise<readonly RouteInfo[]>;
-  find(id: string): Promise<RouteInfo | null>;
+  list(presets?:readonly RouteSketchJson[]): Promise<readonly RouteInfo[]>;
+  find(id: string,presets?:readonly RouteSketchJson[]): Promise<RouteInfo | null>;
 }
 
 export const routeRepository: RouteRepository = {
-  async list() {
-    return catalog;
+  async list(presets) {
+    return presets?buildRouteCatalog(presets):catalog;
   },
-  async find(id) {
-    return catalog.find((route) => route.id === id) ?? null;
+  async find(id,presets) {
+    return (presets?buildRouteCatalog(presets):catalog).find((route) => route.id === id) ?? null;
   },
 };

@@ -6,9 +6,10 @@ import {parseOverpassResponse} from '../src/features/map/cafe-parser.ts';
 import {buildExplorerDocument} from '../src/features/map/explorer-document.ts';
 import {roadRouteData} from '../src/features/map/road-route-data.ts';
 
-test('all six route IDs use static road-graph geometries rather than random polygons',()=>{
+test('Ijen is a manual override; other five routes retain road-graph models',()=>{
  assert.equal(Object.keys(roadRouteData).length,6);
  for(const id of Object.keys(roadRouteData)){
+  if(id==='ijen-run')continue;
   const route=roadRouteGeometry(id);
   assert.equal(route.source,'osm-road-graph',id);
   assert.ok(route.profile==='foot'||route.profile==='bike',id);
@@ -97,7 +98,7 @@ test('checkpoint names and promo descriptions are embedded safely',()=>{
  assert.match(html,/name\.textContent/);
 });
 test('Ijen manual preset keeps distinct purple dashed line and cafe pin',()=>{
- const route=roadRouteGeometry('draft-1791640851016');
+ const route=roadRouteGeometry('ijen-run');
  assert.equal(route.source,'manual-sketch');
  const stop={id:'stop-1791680332375',name:'Warung bakso Mas Aji',
   kind:'cafe',coordinates:[112.624412,-7.96629],promoted:false,

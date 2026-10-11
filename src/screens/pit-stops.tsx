@@ -5,16 +5,18 @@ import {Modal,Pressable,Text,View} from 'react-native';
 import {AppPage} from '@/components/app-page';
 import {AreaMap} from '@/components/area-map';
 import {getDefaultCheckpoints} from '@/features/map/presets';
+import {usePresetStore} from '@/features/map/preset-store';
 import {Action,Body,Chip,Heading,Panel,StatusNote} from '@/components/primitives';
 import {rupiah,sampleMerchants,type Merchant} from '@/features/demo/demo-data';
 import {useDemoStore} from '@/features/demo/demo-store';
 import {font,palette,radius} from '@/theme/tokens';
 
 export function PitStopsScreen(){
+ const {mode,routes:storedRoutes,checkpointSets}=usePresetStore();
  const {data,viewVoucher}=useDemoStore();
  const [filter,setFilter]=useState<'all'|'budget'|'bike'>('all');
  const [cafeArea,setCafeArea]=useState('Ijen');
- const checkpointPresets=useMemo(()=>getDefaultCheckpoints(cafeArea),[cafeArea]);
+ const checkpointPresets=useMemo(()=>getDefaultCheckpoints(cafeArea,{routes:storedRoutes,checkpointSets}),[cafeArea,storedRoutes,checkpointSets]);
  const [selected,setSelected]=useState<Merchant|null>(null);
  const merchants=useMemo(()=>[...data.promos,...sampleMerchants].filter(m=>
   filter==='all'||(filter==='budget'&&m.price<15000)||(filter==='bike'&&m.bike)),[data.promos,filter]);
@@ -45,8 +47,8 @@ export function PitStopsScreen(){
     </View>)}
    </View>:null}
   </Panel>
-  <Action label="Tambah checkpoint/toko dan ekspor JSON" icon={Plus}
-   onPress={()=>router.push('/studio')}/>
+  <Action label={mode==='admin'?'Kelola checkpoint & preset':'Buat rute sendiri'} icon={Plus}
+   onPress={()=>router.push(mode==='admin'?'/admin':'/studio')}/>
   <Panel>
    <Heading icon={Coffee}>Cari tempat rehat</Heading>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
