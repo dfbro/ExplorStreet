@@ -12,6 +12,7 @@ import {useRoutePreferences} from '@/features/routes/preferences';
 import {rankRoutes} from '@/features/routes/ranking';
 import {routeRepository} from '@/features/routes/repository';
 import {usePresetStore} from '@/features/map/preset-store';
+import {useMapSelection} from '@/features/map/map-selection';
 import {font,palette,radius} from '@/theme/tokens';
 
 const AREAS=['Ijen','Kayutangan','Lowokwaru','Blimbing','Sukun'];
@@ -59,6 +60,7 @@ function LevelPicker({title,value,onChange}:{
 
 export function RouteSearchScreen(){
  const {routes:storedRoutes,ready:presetsReady}=usePresetStore();
+ const {selection:mapSelection,selectArea,selectDestination,clearDestination,error:mapError}=useMapSelection();
  const {width,height}=useWindowDimensions();
  const insets=useSafeAreaInsets();
  const pageRef=useRef<ScrollView>(null);
@@ -76,7 +78,6 @@ export function RouteSearchScreen(){
  const [minInput,setMinInput]=useState(filters.minKm?.toString()??'');
  const [maxInput,setMaxInput]=useState(filters.maxKm?.toString()??'');
  const [distanceError,setDistanceError]=useState('');
- const [destination,setDestination]=useState<{latitude:number;longitude:number}|null>(null);
  const [reload,setReload]=useState(0);
 
  useEffect(()=>{
@@ -89,9 +90,11 @@ export function RouteSearchScreen(){
 
  const results=useMemo(()=>rankRoutes(catalog,filters,favorites),[catalog,filters,favorites]);
  const area=filters.area??'Ijen';
+ const destination=mapSelection.area===area&&!mapSelection.routeId?mapSelection.destination:null;
+ const ownRoutes=useMemo(()=>catalog.filter(route=>route.id.startsWith('user-')),[catalog]);
  const hasQuery=filters.query.trim().length>0;
  const recommendTitle=filters.savedOnly?'Rute tersimpan':hasQuery?'Hasil pencarian':'Rekomendasi rute';
- const onDestination=useCallback((point:{latitude:number;longitude:number})=>setDestination(point),[]);
+ const onDestination=useCallback((point:{latitude:number;longitude:number})=>selectDestination(area,point),[area,selectDestination]);
 
  const scrollToResults=useCallback(()=>{
   if(scrollTimer.current)clearTimeout(scrollTimer.current);
@@ -132,7 +135,7 @@ export function RouteSearchScreen(){
   setSport('run');setArea(null);setDistance('all');setSavedOnly(false);setQuery('');
   setMinInput('');setMaxInput('');setDistanceError('');
   for(const key of ['quiet','flat','stops'] as const)setWeight(key,DEFAULT_FILTERS.weights[key]);
-  setDestination(null);
+  selectArea('Ijen');
  };
 
  return <SafeAreaView edges={['top']} style={{flex:1,backgroundColor:palette.background}}>
@@ -195,7 +198,7 @@ export function RouteSearchScreen(){
     </View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{gap:7,paddingBottom:1}}>
      {AREAS.map(name=><Selection key={name} label={name} active={area===name}
-       onPress={()=>{setArea(name);setDestination(null);}}/>)}
+       onPress={()=>{setArea(name);selectArea(name);}}/>)}
     </ScrollView>
     <AreaMap area={area} height={235} destinationMode destination={destination}
      onDestination={onDestination} compact/>
@@ -203,10 +206,10 @@ export function RouteSearchScreen(){
       flexDirection:'row',alignItems:'center',gap:9}}>
        <Check size={17} color={palette.forest}/>
        <Text style={{flex:1,fontFamily:font.medium,fontSize:12,color:palette.forest,lineHeight:18}}>
-        Titik tujuan sementara dipilih di peta. Belum menjadi rute navigasi.
+        Titik tujuan dipilih. Tampilkan peta yang sama di tab Navigasi.
        </Text>
        <Pressable accessibilityRole="button" accessibilityLabel="Hapus titik tujuan"
-        onPress={()=>setDestination(null)} style={{minWidth:40,minHeight:40,alignItems:'center',justifyContent:'center'}}>
+        onPress={clearDestination} style={{minWidth:40,minHeight:40,alignItems:'center',justifyContent:'center'}}>
         <X size={18} color={palette.forest}/>
        </Pressable>
      </View>:
@@ -214,6 +217,11 @@ export function RouteSearchScreen(){
       paddingHorizontal:3}}>
       Pilih area, lalu tekan <Text style={{fontFamily:font.bold}}>Pilih tujuan</Text> di peta untuk menandai titik akhir.
      </Text>}
+    {destination?<Pressable accessibilityRole="button" onPress={()=>router.push('/nav')}
+      style={({pressed})=>({minHeight:46,backgroundColor:palette.forest,
+       borderRadius:12,alignItems:'center',justifyContent:'center',opacity:pressed?.76:1})}>
+      <Text style={{fontFamily:font.bold,color:palette.white,fontSize:13}}>Lihat titik ini di Navigasi</Text>
+     </Pressable>:null}
    </View>
 
    <Pressable accessibilityRole="button" accessibilityState={{selected:filters.savedOnly}}
@@ -239,6 +247,16 @@ export function RouteSearchScreen(){
      </Text>
      <ChevronRight size={19} color={palette.pine}/>
    </Pressable>
+
+   {ownRoutes.length>0?<View style={{gap:11}}>
+    <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
+     <Text style={{fontFamily:font.display,color:palette.ink,fontSize:20}}>Rute buatanku</Text>
+     <Text style={{fontFamily:font.semi,color:palette.secondaryText,fontSize:12}}>{ownRoutes.length} lokal</Text>
+    </View>
+    {ownRoutes.map(route=><RouteCard key={route.id} route={route}
+     saved={favorites.has(route.id)} onToggleSave={()=>toggleFavorite(route.id)}/>)}
+   </View>:null}
+   {mapError?<Text style={{fontFamily:font.medium,fontSize:12,color:palette.danger}}>{mapError}</Text>:null}
 
    <View style={{borderRadius:17,borderWidth:1,borderColor:palette.line,backgroundColor:palette.surface,
       overflow:'hidden'}}>

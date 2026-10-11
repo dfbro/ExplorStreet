@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Stack,router} from 'expo-router';
+import {Stack,router,useLocalSearchParams} from 'expo-router';
 import {ActivityIndicator,Pressable,ScrollView,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {MapSurface} from '@/components/map-surface';
@@ -56,6 +56,7 @@ function FormInput({label,value,onChangeText,placeholder,multiline=false}:{
 
 export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
  const {mode,routes:storedRoutes,checkpointSets,saveRoute,deleteRoute}=usePresetStore();
+ const {edit}=useLocalSearchParams<{edit?:string}>();
  const isAdmin=adminMode&&mode==='admin';
  const storageKey=isAdmin?'explorstreet.editor.admin.v1':'explorstreet.editor.v1';
  const {width}=useWindowDimensions();
@@ -80,6 +81,7 @@ export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
  const [importText,setImportText]=useState('');
  const [feedback,setFeedback]=useState('');
  const [busy,setBusy]=useState(false);
+ const [confirmDelete,setConfirmDelete]=useState(false);
  const scroller=useRef<ScrollView>(null);
  const formY=useRef(0);
  const onMap=useCallback((message:MapEditorEvent)=>{
@@ -128,6 +130,26 @@ export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
    .catch(()=>setFeedback('Gagal menyimpan draf ke perangkat.'));
  },[ready,routeId,title,area,activity,points,checkpoints,storageKey]);
 
+ useEffect(()=>{
+  if(!ready||!edit||isAdmin)return;
+  const route=storedRoutes.find(item=>item.id===edit&&item.id.startsWith('user-'));
+  if(!route)return;
+  setRouteId(route.id);setTitle(route.title);setArea(route.area);setActivity(route.activity);
+  setPoints(route.geometry.coordinates);
+  setCheckpoints(checkpointSets.find(item=>item.routeId===route.id)?.checkpoints??[]);
+  setMapSeed(previous=>({area:route.area,points:route.geometry.coordinates,revision:previous.revision+1}));
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[ready,edit]);
+ const newRoute=()=>{
+  const id=`user-${Date.now()}`;
+  setRouteId(id);setTitle('Rute buatanku');setPoints([]);setCheckpoints([]);
+  setMapSeed(previous=>({area,points:[],revision:previous.revision+1}));
+  setFeedback('Rute baru siap digambar.');setConfirmDelete(false);
+ };
+ const removeCurrentRoute=()=>{
+  if(!routeId.startsWith('user-')||!storedRoutes.some(route=>route.id===routeId))return;
+  deleteRoute(routeId);newRoute();setFeedback('Rute pribadi dihapus dari perangkat.');
+ };
  const center=getAreaCenter(mapSeed.area);
  const mapHtml=useMemo(()=>buildExplorerDocument({
   area:mapSeed.area,latitude:mapSeed.points.length?mapSeed.points[0][1]:center.latitude,
@@ -242,6 +264,7 @@ export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
     </Text>
    </View>
    {isAdmin?<Btn label="Lihat dashboard mitra (simulasi)" onPress={()=>router.push('/partner')}/>:null}
+   {!isAdmin?<Btn label="Buat rute baru" onPress={newRoute}/>:null}
    {storedRoutes.length>0?<View style={{backgroundColor:palette.surface,
     borderWidth:1,borderColor:palette.line,borderRadius:radius.large,padding:14,gap:10}}>
     <SectionTitle>{isAdmin?'Kelola preset tersimpan':'Rute tersimpan'}</SectionTitle>
@@ -378,9 +401,14 @@ export function RouteStudioScreen({adminMode=false}:{adminMode?:boolean}){
      Data disimpan di perangkat ini dan dibaca oleh katalog mode User.
     </Text>
     <Btn filled label={isAdmin?'Simpan preset & checkpoint':'Simpan rute ke perangkat'} onPress={saveToDevice}/>
-    {isAdmin&&!['ijen-run','kayu-run','sukun-run','lowok-bike','blimbing-bike','ijen-bike'].includes(routeId)
-      &&storedRoutes.some(r=>r.id===routeId)
-     ?<Btn label="Hapus preset ini" onPress={()=>{deleteRoute(routeId);setFeedback('Preset dihapus dari perangkat.');}}/>:null}
+    {routeId.startsWith('user-')&&storedRoutes.some(r=>r.id===routeId)?<>
+     <Btn label="Hapus rute pribadi" onPress={()=>setConfirmDelete(true)}/>
+     {confirmDelete?<View style={{gap:8}}>
+      <Text style={{fontFamily:font.bold,color:palette.danger}}>Hapus rute ini secara permanen dari perangkat?</Text>
+      <Btn label="Ya, hapus rute" onPress={removeCurrentRoute}/>
+      <Btn label="Batal" onPress={()=>setConfirmDelete(false)}/>
+     </View>:null}
+    </>:null}
    </View>
    {isAdmin?<View style={{backgroundColor:palette.surface,padding:16,gap:12,
     borderRadius:radius.large,borderWidth:1,borderColor:palette.line}}>

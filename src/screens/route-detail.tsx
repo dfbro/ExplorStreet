@@ -10,6 +10,7 @@ import { useRoutePreferences } from '@/features/routes/preferences';
 import { formatDistance } from '@/features/routes/ranking';
 import { routeRepository } from '@/features/routes/repository';
 import {usePresetStore} from '@/features/map/preset-store';
+import {useMapSelection} from '@/features/map/map-selection';
 import { font, palette, radius } from '@/theme/tokens';
 
 type DetailState =
@@ -33,6 +34,7 @@ function DetailFact({ icon: Icon, value, label }: {
 
 export function RouteDetailScreen() {
   const {routes:storedRoutes,ready:presetsReady}=usePresetStore();
+  const {selectRoute}=useMapSelection();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
   const { favorites, ready, toggleFavorite, saveError } = useRoutePreferences();
@@ -148,8 +150,10 @@ export function RouteDetailScreen() {
               <Info size={18} color={palette.danger} />
               <Text style={{ fontFamily: font.medium, color: palette.danger, fontSize: 12, flex: 1 }}>{saveError}</Text>
             </View> : null}
-            <Action label={route.bundledDefault?'Lihat simulator generik (bukan rute ini)':'Coba simulator navigasi'} icon={Play}
-              onPress={() => router.push({pathname:'/nav',params:{route:route.id}})}/>
+            <Action label="Lihat rute di peta navigasi" icon={Play}
+              onPress={() => {selectRoute(route.area,route.id);router.push('/nav');}}/>
+            {route.id.startsWith('user-')?<Action label="Edit rute pribadi" icon={Plus}
+              onPress={()=>router.push({pathname:'/studio',params:{edit:route.id}})}/>:null}
             <Action label="Buat dan simpan rute sendiri" icon={Plus}
               onPress={() => router.push('/studio')}/>
             <Pressable onPress={() => toggleFavorite(route.id)} accessibilityRole="button"
