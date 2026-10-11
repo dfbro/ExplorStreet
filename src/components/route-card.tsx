@@ -26,8 +26,10 @@ export function RouteCard({ route, featured, saved, onToggleSave }: {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingRight: 38 }}>
           <MapPin size={13} color={palette.pine} />
           <Text style={{ fontFamily: font.semi, fontSize: 12, color: palette.secondaryText }}>{route.area}</Text>
-          {featured ? <View style={{ backgroundColor: palette.pale, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8 }}>
-            <Text style={{ color: palette.forest, fontFamily: font.bold, fontSize: 10 }}>Urutan 1</Text>
+          {featured||route.bundledDefault ? <View style={{ backgroundColor: palette.pale, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8 }}>
+            <Text style={{ color: palette.forest, fontFamily: font.bold, fontSize: 10 }}>
+              {route.bundledDefault?'Preset default':'Urutan 1'}
+            </Text>
           </View> : null}
         </View>
         <Text numberOfLines={2} style={{
@@ -39,14 +41,14 @@ export function RouteCard({ route, featured, saved, onToggleSave }: {
             <RouteIcon size={13} color={palette.pine}/>
             <Text style={{ color: palette.ink, fontFamily: font.semi, fontSize: 11 }}>{formatDistance(route.distanceKm)} km</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {route.durationMin!==undefined?<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Clock3 size={13} color={palette.pine}/>
             <Text style={{ color: palette.ink, fontFamily: font.semi, fontSize: 11 }}>{route.durationMin} mnt</Text>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          </View>:null}
+          {route.ascentM!==undefined?<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Mountain size={13} color={palette.pine}/>
             <Text style={{ color: palette.ink, fontFamily: font.semi, fontSize: 11 }}>+{route.ascentM} m</Text>
-          </View>
+          </View>:null}
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 12, minWidth: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, flexShrink: 1 }}>

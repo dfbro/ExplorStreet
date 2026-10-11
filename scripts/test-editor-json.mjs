@@ -3,6 +3,8 @@ import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
 import {makeRouteJson,makeCheckpointJson,validateRouteJson,parseEditorJson,jsonText,estimateSketchKm} from '../src/features/map/editor-json.ts';
 import {validateCheckpointJson} from '../src/features/map/editor-json.ts';
+import {getDefaultPresets,getRouteCheckpoints,getDefaultCheckpoints} from '../src/features/map/presets.ts';
+import {roadRouteGeometry,straightLineKm} from '../src/features/map/route-sketch.ts';
 
 const coords=[[112.6214,-7.9728],[112.6264,-7.9728],[112.6274,-7.9708]];
 test('sketch length uses geographic segment lengths and is positive',()=>{
@@ -50,4 +52,35 @@ test('default JSON manifest contains only valid, cross-referenced presets',()=>{
  assert.equal(new Set(ids).size,ids.length);
  assert.ok(checkpoints.every(spot=>ids.includes(spot.routeId)));
  assert.equal(new Set(checkpoints.map(spot=>spot.routeId)).size,checkpoints.length);
+});
+test('bundled Ijen default preserves both user-submitted documents',()=>{
+ const presets=getDefaultPresets();
+ assert.equal(presets.error,undefined);
+ assert.equal(presets.routes.length,1);
+ assert.equal(presets.checkpointSets.length,1);
+ const route=presets.routes[0];
+ const checkpointDoc=presets.checkpointSets[0];
+ const sourceRoute=JSON.parse(readFileSync(new URL('../src/features/map/presets/source/ijen-default-route.json',import.meta.url),'utf8'));
+ const sourceCheckpoints=JSON.parse(readFileSync(new URL('../src/features/map/presets/source/ijen-default-checkpoints.json',import.meta.url),'utf8'));
+ assert.deepEqual(route,validateRouteJson(sourceRoute));
+ assert.deepEqual(checkpointDoc,validateCheckpointJson(sourceCheckpoints));
+ assert.equal(route.id,checkpointDoc.routeId);
+ assert.equal(route.distance.roadSnapped,false);
+ assert.equal(route.distance.estimatedKm,3.553);
+ assert.equal(route.geometry.coordinates.length,10);
+ assert.equal(checkpointDoc.checkpoints[0].name,'Warung bakso Mas Aji');
+ assert.equal(checkpointDoc.checkpoints[0].promoted,false);
+ assert.equal(checkpointDoc.checkpoints[0].verification,'unverified');
+ assert.deepEqual(getRouteCheckpoints(route.id),checkpointDoc.checkpoints);
+ assert.equal(getDefaultCheckpoints('Ijen').length,1);
+ assert.equal(getDefaultCheckpoints('Kayutangan').length,0);
+});
+test('the imported route renders as an unsnapped manual sketch (longitude to latitude order)',()=>{
+ const {points,source,distanceKm}=roadRouteGeometry('draft-1791640851016');
+ assert.equal(source,'manual-sketch');
+ assert.equal(distanceKm,3.553);
+ assert.equal(points.length,10);
+ assert.deepEqual(points[0],[-7.97207,112.621708]);
+ assert.equal(Number(straightLineKm(points).toFixed(3)),3.553);
+ assert.equal(roadRouteGeometry('ijen-run').source,'osm-road-graph');
 });

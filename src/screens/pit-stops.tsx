@@ -28,10 +28,22 @@ export function PitStopsScreen(){
       <Chip key={area} label={area} active={cafeArea===area} onPress={()=>setCafeArea(area)}/>)}
    </View>
    <AreaMap area={cafeArea} height={260} checkpointPresets={checkpointPresets} compact/>
-   {checkpointPresets.length>0?<Body>
-     {checkpointPresets.length} titik checkpoint dari preset komunitas tersedia untuk area ini.
-     Lokasi dan promosi belum diverifikasi.
-    </Body>:null}
+   {checkpointPresets.length>0?<View style={{gap:8}}>
+    <Body>{checkpointPresets.length} checkpoint dari preset bawaan tersedia untuk area ini. Lokasi belum diverifikasi.</Body>
+    {checkpointPresets.map(stop=><View key={stop.id} style={{paddingHorizontal:13,paddingVertical:11,
+     backgroundColor:palette.pale,borderRadius:12,flexDirection:'row',alignItems:'center',gap:10}}>
+      <Coffee size={18} color={palette.forest}/>
+      <View style={{flex:1,gap:3}}>
+       <Text style={{fontFamily:font.bold,color:palette.ink,fontSize:13}} numberOfLines={1}>{stop.name}</Text>
+       <Text style={{fontFamily:font.medium,color:palette.secondaryText,fontSize:11}}>
+        {stop.kind==='cafe'?'Kafe/tempat makan':stop.kind==='store'?'Toko':'Tempat rehat'}
+       </Text>
+      </View>
+      <Text style={{fontFamily:font.semi,color:palette.pine,fontSize:10}}>
+       {stop.promoted?'Promosi draft':'Non-promosi'}
+      </Text>
+    </View>)}
+   </View>:null}
   </Panel>
   <Action label="Tambah checkpoint/toko dan ekspor JSON" icon={Plus}
    onPress={()=>router.push('/studio')}/>

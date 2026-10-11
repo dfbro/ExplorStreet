@@ -367,8 +367,9 @@ export function RouteSearchScreen(){
    </View>
    <Text style={{fontFamily:font.medium,color:palette.tertiaryText,fontSize:11,
     lineHeight:18,textAlign:'center'}}>
-    Geometri rute dan jarak memakai model jaringan jalan OSM. Durasi dan kondisi jalan
-    belum diverifikasi; tidak ada navigasi langsung.
+    Rute berwarna hijau memakai contoh model jaringan jalan OSM; preset sketsa
+    menggunakan garis lurus antartitik. Durasi, lokasi checkpoint, dan kondisi
+    jalan belum diverifikasi. Belum ada navigasi langsung.
    </Text>
   </ScrollView>
   <AppNav/>

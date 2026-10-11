@@ -8,8 +8,8 @@ export interface RouteInfo {
   area: string;
   sport: Sport;
   distanceKm: number;
-  durationMin: number;
-  ascentM: number;
+  durationMin?: number;
+  ascentM?: number;
   quietScore: Priority;
   flatScore: Priority;
   stopScore: Priority;
@@ -17,7 +17,8 @@ export interface RouteInfo {
   notes: string;
   accent: 'lime' | 'gold' | 'sky';
   tags: string[];
-  verification: 'sample';
+  verification: 'sample'|'unverified';
+  bundledDefault?: boolean;
 }
 
 export interface RouteWeights {

@@ -92,26 +92,39 @@ opening hours, or paid placement. Popup text explicitly communicates
 the unverified status. Blue storefront and brown coffee pins are distinct
 from the existing OpenStreetMap cafe markers.
 
-## Default preset manifest (awaiting user-supplied JSON)
+## Default preset manifest (Ijen user-supplied route installed)
 
 `src/features/map/presets/manifest.json` has two arrays:
 
 ```json
-{"routes":[],"checkpointSets":[]}
+{"routes":[{"id":"draft-1791640851016","title":"Ijen default route"}],
+ "checkpointSets":[{"routeId":"draft-1791640851016","checkpoints":[{"name":"Warung bakso Mas Aji"}]}]}
 ```
 
-Both arrays are intentionally empty until actual route and store JSON
-files are supplied. When the user sends exported files for Ijen and
-other areas, validate each document and add them to the manifest.
+The abbreviated illustration above shows the keys only; the actual
+manifest contains **complete validated v1 documents**. The unmodified
+user submissions are preserved in `src/features/map/presets/source/`.
+The Ijen entry contains ten `[longitude,latitude]` sketch vertices,
+an estimated **3.553 km** of straight-segment Haversine distance, and
+one checkpoint: **Warung bakso Mas Aji**, category `cafe` as supplied,
+`promoted:false`. Both route and checkpoint are `unverified`.
+
+Other areas may be added with validated documents using the same schema.
 Checkpoint documents must reference an existing route ID. A route ID
 is unique, and one checkpoint document may be attached to each route.
 
-The app's `getDefaultPresets()` validates entries. When populated,
-Studio will show the route presets to edit; Pit-stop will show the
-matching checkpoint pins by area. Pins use a distinct color and the
-app does not claim their location, opening hours or promotion terms
-are verified. The existing six route cards are still the old demo
-catalog until replacement routes are approved and integrated.
+The app's `getDefaultPresets()` validates entries. The submitted Ijen
+sketch now appears in the **route search catalog and route detail map**,
+alongside six previous OSRM demo routes. It is ranked first for the
+default running recommendations and labeled `Preset default`.
+It uses a **dashed purple polyline with a light outline**, not the solid green OSRM
+road-network line. Its detail screen deliberately omits fabricated
+duration and elevation.
+
+Studio can load the same preset for editing. Pit-stop displays its
+checkpoint as a location pin and a named non-promoted entry for Ijen.
+The route detail map also renders the pin. No marker, place name,
+promotion, road access, or route safety is independently verified.
 There is **no fabricated default promoted cafe**.
 
 A new preset import should receive its **own Git commit** after the

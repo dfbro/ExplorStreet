@@ -93,7 +93,9 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
  minZoom:10,maxZoom:18,maxNativeZoom:18,
 }).addTo(map);
-const sketchColor='#e59634';
+// Manual sketch stays visually distinct from orange OSM road classifications
+// and from green OSRM road-graph routes.
+const sketchColor='#8045bb';
 const roadColor='#15794e';
 // Material Icons "place" vector, rendered in a Leaflet marker rather than an oval.
 function pinIcon(color,cssClass){
@@ -105,7 +107,7 @@ function pinIcon(color,cssClass){
 const startIcon=pinIcon('#15794e','start-pin');
 let points=payload.showSketch?payload.sketch.map(p=>p.slice()):[];
 const initial=points.map(p=>p.slice());
-let drawing=payload.editorMode===true,layer=null,startMarker=null,endMarker=null;
+let drawing=payload.editorMode===true,layer=null,underlay=null,startMarker=null,endMarker=null;
 let isRoadRoute=payload.roadAligned===true;
 let pickingDestination=false;
 let pickingCheckpoint=false,checkpointMarker=null;
@@ -253,12 +255,17 @@ window.addEventListener('message',event=>{
 setCheckpoints(payload.editorCheckpoints||[]);
 function refresh(){
  if(layer)map.removeLayer(layer);
+ if(underlay)map.removeLayer(underlay);
  if(startMarker)map.removeLayer(startMarker);
  if(endMarker)map.removeLayer(endMarker);
- layer=null;startMarker=null;endMarker=null;
+ layer=null;underlay=null;startMarker=null;endMarker=null;
  if(points.length>1){
-  layer=L.polyline(points,{color:isRoadRoute?roadColor:sketchColor,weight:5,
-   dashArray:isRoadRoute?undefined:'10 9',opacity:.96,lineCap:'round',lineJoin:'round'}).addTo(map);
+  if(!isRoadRoute){
+   underlay=L.polyline(points,{color:'#fffdf7',weight:9,opacity:.92,
+    interactive:false,lineCap:'round',lineJoin:'round'}).addTo(map);
+  }
+  layer=L.polyline(points,{color:isRoadRoute?roadColor:sketchColor,weight:isRoadRoute?5:5.5,
+   dashArray:isRoadRoute?undefined:'12 8',opacity:1,lineCap:'round',lineJoin:'round'}).addTo(map);
  }
  if(points.length){
   startMarker=L.marker(points[0],{icon:startIcon,
@@ -274,7 +281,7 @@ function refresh(){
   sketchStatus.textContent=points.length+' titik • estimasi '+distanceKm(points).toFixed(2)+' km';
  }else{
   sketchStatus.textContent=points.length
-   ?(isRoadRoute?'Garis hijau: rute dari jaringan jalan':'Garis jingga: konsep manual')
+   ?(isRoadRoute?'Garis hijau: rute dari jaringan jalan':'Garis ungu: konsep manual')
    :'Belum ada rute dipilih';
  }
  document.getElementById('route-disclaimer').textContent=isRoadRoute
@@ -358,7 +365,7 @@ document.getElementById('cafe-status').textContent=payload.cafes.length
 setTimeout(()=>map.invalidateSize(),300);
 window.__explorstreetMapReady=true;
 window.__explorstreetCafeCount=payload.cafes.length;
-window.__explorstreetGeometrySource=payload.roadAligned?'osm-road-graph':'none';
+window.__explorstreetGeometrySource=payload.roadAligned?'osm-road-graph':payload.showSketch?'manual-sketch':'none';
 })();
 </script>
 </body>

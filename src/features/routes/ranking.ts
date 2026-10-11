@@ -17,6 +17,9 @@ export function rankRoute(route: RouteInfo, filters: RouteFilters): number {
     route.flatScore * weights.flat +
     route.stopScore * weights.stops +
     distanceScore(route.distanceKm, filters.distance) +
+    // A supplied default gets discoverability in its own area, without
+    // claiming its quietness, slope or safety were actually measured.
+    (route.bundledDefault && (!filters.area || route.area===filters.area) ? 24 : 0) +
     (filters.area && route.area === filters.area ? 18 : 0)
   );
 }

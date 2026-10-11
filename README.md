@@ -76,9 +76,15 @@ uses GeoJSON `LineString` with **[longitude, latitude]** coordinate order.
 See [ROUTE_PRESETS.md](ROUTE_PRESETS.md) for example documents and validation.
 
 Default user-authored presets are configured in
-`src/features/map/presets/manifest.json`. Its `routes` and
-`checkpointSets` arrays are intentionally **empty** until reviewed JSON
-is provided. The six existing road-model examples are not custom presets.
+`src/features/map/presets/manifest.json`. The first user-submitted Ijen
+route has been imported with ten manual vertices (3.553 km straight-
+segment estimate) and a single unpromoted cafe checkpoint, **Warung bakso
+Mas Aji**. It is available in route search, detail map, Studio, and
+Ijen Pit-stop. The six previous road-model examples remain separate;
+the uploaded sketch is **not road-snapped or field-verified**. See
+[ROUTE_PRESETS.md](ROUTE_PRESETS.md) for its raw JSON sources.
+The Ijen import's data provenance, unit tests and mobile map screenshots
+are documented in [IJEN_PRESET_QA.md](IJEN_PRESET_QA.md).
 
 ## Validate changes
 

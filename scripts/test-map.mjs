@@ -96,3 +96,18 @@ test('checkpoint names and promo descriptions are embedded safely',()=>{
  assert.match(html,/promo\.textContent/);
  assert.match(html,/name\.textContent/);
 });
+test('Ijen manual preset keeps distinct purple dashed line and cafe pin',()=>{
+ const route=roadRouteGeometry('draft-1791640851016');
+ assert.equal(route.source,'manual-sketch');
+ const stop={id:'stop-1791680332375',name:'Warung bakso Mas Aji',
+  kind:'cafe',coordinates:[112.624412,-7.96629],promoted:false,
+  promoText:'',notes:'',verification:'unverified'};
+ const html=buildExplorerDocument({area:'Ijen',latitude:-7.9728,longitude:112.6214,
+  sketch:route.points,roadAligned:false,showSketch:true,cafes:[],editorCheckpoints:[stop]});
+ assert.match(html,/manual-sketch/);
+ assert.match(html,/Garis ungu: konsep manual/);
+ assert.match(html,/#8045bb/);
+ assert.match(html,/12 8/);
+ assert.match(html,/Warung bakso Mas Aji/);
+ assert.equal(html.includes('"promoted":true'),false);
+});

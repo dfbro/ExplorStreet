@@ -1,0 +1,20 @@
+{
+  "schema": "explorstreet.checkpoints",
+  "version": 1,
+  "routeId": "draft-1791640851016",
+  "checkpoints": [
+    {
+      "id": "stop-1791680332375",
+      "name": "Warung bakso Mas Aji",
+      "kind": "cafe",
+      "coordinates": [
+        112.624412,
+        -7.96629
+      ],
+      "promoted": false,
+      "promoText": "",
+      "notes": "",
+      "verification": "unverified"
+    }
+  ]
+}

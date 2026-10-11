@@ -5,6 +5,7 @@ import {MapSurface} from '@/components/map-surface';
 import {getAreaCenter,osmUrl} from '@/features/map/areas';
 import {buildExplorerDocument} from '@/features/map/explorer-document';
 import {roadRouteGeometry} from '@/features/map/route-sketch';
+import {getRouteCheckpoints} from '@/features/map/presets';
 import {useCafeSearch} from '@/features/map/use-cafe-search';
 import type {StoreCheckpoint} from '@/features/map/editor-json';
 import {font,palette} from '@/theme/tokens';
@@ -19,13 +20,14 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
  const {latitude,longitude}=getAreaCenter(area);
  const {lookup,load}=useCafeSearch(area);
  const route=useMemo(()=>roadRouteGeometry(routeId),[routeId]);
+ const bundledCheckpoints=useMemo(()=>routeId?getRouteCheckpoints(routeId):EMPTY_CHECKPOINTS,[routeId]);
  const html=useMemo(()=>buildExplorerDocument({
   area,latitude,longitude,sketch:route.points,
   roadAligned:route.source==='osm-road-graph',cafes:lookup.cafes,
-  editorCheckpoints:checkpointPresets,
-  showSketch:route.source==='osm-road-graph',destinationMode,
+  editorCheckpoints:routeId?bundledCheckpoints:checkpointPresets,
+  showSketch:route.source!=='none',destinationMode,
   destination:destination?[destination.latitude,destination.longitude]:null,
- }),[area,latitude,longitude,route,lookup.cafes,checkpointPresets,destinationMode,destination]);
+ }),[area,latitude,longitude,route,lookup.cafes,checkpointPresets,bundledCheckpoints,routeId,destinationMode,destination]);
  return <View style={{gap:11}}>
    <MapSurface html={html} height={height} area={area} onDestination={onDestination}/>
    {destinationMode ? null : <>
@@ -34,6 +36,8 @@ export function AreaMap({area,height=300,routeId,compact=false,destinationMode=f
      <Text style={{flex:1,fontFamily:font.medium,fontSize:12,lineHeight:19,color:palette.secondaryText}}>
        {route.source==='osm-road-graph'
         ?'Garis hijau mengikuti model jaringan jalan OSM, bukan bentuk acak. Belum disurvei untuk kondisi jalan atau keamanan. Mode gambar manual tetap hanya sketsa.'
+        :route.source==='manual-sketch'
+        ?`Garis ungu putus-putus berasal dari ${route.points.length} titik sketsa preset. Jarak adalah penjumlahan segmen lurus, bukan jarak mengikuti ruas jalan. Lokasi checkpoint belum diverifikasi.`
         :'Peta OpenStreetMap interaktif. Gunakan “Gambar konsep” jika ingin menyusun titik contoh tanpa routing.'}
      </Text>
    </View>

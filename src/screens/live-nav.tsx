@@ -78,6 +78,7 @@ export function LiveNavScreen(){
     {routes.map(r=><Chip key={r.id} label={r.name} active={route?.id===r.id} onPress={()=>choose(r.id)}/>)}
    </View>:null}
   </Panel>
+  {route?.bundledDefault?<StatusNote text="Preset Ijen yang dimuat adalah sketsa manual. Urutan checkpoint animasi di bawah bersifat demo generik, tidak mewakili rute atau Warung bakso Mas Aji pada file JSON."/ >:null}
   {route?<><Panel tint>
       <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
        <View style={{gap:4}}><Text style={{fontFamily:font.semi,color:palette.pine,fontSize:12}}>Playback virtual</Text>

@@ -1,0 +1,59 @@
+{
+  "schema": "explorstreet.route",
+  "version": 1,
+  "id": "draft-1791640851016",
+  "title": "Ijen default route",
+  "area": "Ijen",
+  "activity": "run",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [
+        112.621708,
+        -7.97207
+      ],
+      [
+        112.623897,
+        -7.968543
+      ],
+      [
+        112.625785,
+        -7.96255
+      ],
+      [
+        112.628746,
+        -7.966715
+      ],
+      [
+        112.629132,
+        -7.968713
+      ],
+      [
+        112.628832,
+        -7.97258
+      ],
+      [
+        112.627974,
+        -7.973005
+      ],
+      [
+        112.627072,
+        -7.976023
+      ],
+      [
+        112.624626,
+        -7.97377
+      ],
+      [
+        112.621751,
+        -7.972495
+      ]
+    ]
+  },
+  "distance": {
+    "estimatedKm": 3.553,
+    "method": "straight-segment-haversine",
+    "roadSnapped": false
+  },
+  "verification": "unverified"
+}

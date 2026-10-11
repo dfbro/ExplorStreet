@@ -1,16 +1,24 @@
 import {roadRouteData} from './road-route-data.ts';
+import {getDefaultPresets} from './presets.ts';
 
 export type LatLng = [latitude:number, longitude:number];
 
 export interface RoadRoute {
-  source:'osm-road-graph'|'none';
+  source:'osm-road-graph'|'manual-sketch'|'none';
   points:LatLng[];
   profile?:'foot'|'bike';
   distanceKm?:number;
 }
 
 export function roadRouteGeometry(routeId?:string):RoadRoute {
-  if(!routeId || !Object.hasOwn(roadRouteData,routeId))return {source:'none',points:[]};
+  if(!routeId)return {source:'none',points:[]};
+  const userPreset=getDefaultPresets().routes.find(route=>route.id===routeId);
+  if(userPreset){
+   return {source:'manual-sketch',distanceKm:userPreset.distance.estimatedKm,
+    profile:userPreset.activity==='run'?'foot':'bike',
+    points:userPreset.geometry.coordinates.map(([longitude,latitude])=>[latitude,longitude])};
+  }
+  if(!Object.hasOwn(roadRouteData,routeId))return {source:'none',points:[]};
   const route=roadRouteData[routeId as keyof typeof roadRouteData];
   return {
     source:'osm-road-graph',

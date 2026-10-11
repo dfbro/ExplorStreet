@@ -13,23 +13,31 @@ const baseline = {
   savedOnly: false,
 };
 
-test('demo repository returns six unique route records', () => {
-  assert.equal(routes.length, 6);
-  assert.equal(new Set(routes.map((route) => route.id)).size, 6);
-  assert.ok(routes.every((route) => route.verification === 'sample'));
+test('catalog combines six OSRM samples with one unverified user-authored default', () => {
+  assert.equal(routes.length, 7);
+  assert.equal(new Set(routes.map((route) => route.id)).size, 7);
+  assert.equal(routes.filter(route=>route.verification==='sample').length,6);
+  const ijen=routes.find(route=>route.bundledDefault);
+  assert.equal(ijen.id,'draft-1791640851016');
+  assert.equal(ijen.area,'Ijen');
+  assert.equal(ijen.sport,'run');
+  assert.equal(ijen.distanceKm,3.553);
+  assert.equal(ijen.durationMin,undefined);
+  assert.equal(ijen.ascentM,undefined);
+  assert.equal(ijen.verification,'unverified');
 });
 
 test('filters activity and recommends quiet routes first', () => {
   const result = rankRoutes(routes, baseline, new Set());
-  assert.equal(result.length, 3);
+  assert.equal(result.length, 4);
   assert.ok(result.every((route) => route.sport === 'run'));
-  assert.equal(result[0].id, 'ijen-run');
+  assert.equal(result[0].id, 'draft-1791640851016');
 });
 
 test('distance filter is a real filter, not just a sort hint', () => {
   assert.deepEqual(
     rankRoutes(routes, { ...baseline, distance: 'short' }, new Set()).map((route) => route.id),
-    ['ijen-run', 'kayu-run'],
+    ['draft-1791640851016', 'ijen-run', 'kayu-run'],
   );
   assert.equal(rankRoutes(routes, { ...baseline, distance: 'long' }, new Set()).length, 1);
   assert.equal(rankRoutes(routes, { ...baseline, sport: 'bike', distance: 'long' }, new Set()).length, 3);
@@ -46,7 +54,7 @@ test('saved mode includes favorites of either activity', () => {
 test('search filters by area and name without changing inputs', () => {
   const query = rankRoutes(routes, { ...baseline, query: 'kayutangan' }, new Set());
   assert.deepEqual(query.map((route) => route.id), ['kayu-run']);
-  assert.equal(routes.length, 6);
+  assert.equal(routes.length, 7);
 });
 
 test('unknown route resolves to null', async () => {
@@ -55,7 +63,7 @@ test('unknown route resolves to null', async () => {
 
 test('custom distance constrains results inclusively and allows one-sided limits', () => {
  const custom = rankRoutes(routes,{...baseline,distance:'custom',minKm:3.5,maxKm:4},new Set());
- assert.deepEqual(custom.map(route=>route.id),['ijen-run']);
+ assert.deepEqual(custom.map(route=>route.id),['draft-1791640851016','ijen-run']);
  assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:7,maxKm:null},new Set()).length,1);
  assert.equal(rankRoutes(routes,{...baseline,distance:'custom',minKm:null,maxKm:3.5},new Set()).length,1);
 });
@@ -63,7 +71,7 @@ test('custom distance constrains results inclusively and allows one-sided limits
 test('selected area reorders suggestions without inventing GPS location', () => {
  const selected=rankRoutes(routes,{...baseline,area:'Kayutangan'},new Set());
  assert.equal(selected[0].area,'Kayutangan');
- assert.equal(selected.length,3);
+ assert.equal(selected.length,4);
 });
 
 test('custom distance input validates range, decimals, and blank bounds', () => {

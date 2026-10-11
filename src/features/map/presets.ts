@@ -1,5 +1,5 @@
-import manifest from './presets/manifest.json';
-import {validateRouteJson,validateCheckpointJson,type RouteSketchJson,type CheckpointJson,type StoreCheckpoint} from './editor-json';
+import manifest from './presets/manifest.json' with {type:'json'};
+import {validateRouteJson,validateCheckpointJson,type RouteSketchJson,type CheckpointJson,type StoreCheckpoint} from './editor-json.ts';
 
 export type DefaultPresets={
  routes:RouteSketchJson[];
@@ -25,4 +25,8 @@ export function getDefaultCheckpoints(area:string):StoreCheckpoint[]{
  const presets=getDefaultPresets();
  const selected=new Set(presets.routes.filter(r=>r.area===area).map(r=>r.id));
  return presets.checkpointSets.filter(set=>selected.has(set.routeId)).flatMap(set=>set.checkpoints);
+}
+export function getRouteCheckpoints(routeId:string):StoreCheckpoint[]{
+ const presets=getDefaultPresets();
+ return presets.checkpointSets.find(set=>set.routeId===routeId)?.checkpoints??[];
 }

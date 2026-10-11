@@ -1,5 +1,6 @@
 import type { RouteInfo } from './model';
 import {roadRouteData} from '../map/road-route-data.ts';
+import {getDefaultPresets} from '../map/presets.ts';
 
 // Distances below are based on cached FOSSGIS OSRM road-graph routes.
 // Durations, ascent and condition scores remain illustrative and unverified.
@@ -53,6 +54,15 @@ const seed: readonly RouteInfo[] = [
     accent: 'lime', tags: ['Gowes', 'Hijau'], verification: 'sample',
   },
 ];
+const defaultRoutes:RouteInfo[]=getDefaultPresets().routes.map(route=>({
+ id:route.id,name:route.title,area:route.area,sport:route.activity,
+ distanceKm:route.distance.estimatedKm,
+ quietScore:0,flatScore:0,stopScore:0,
+ summary:`Preset ${route.area} dari sketsa pengguna, dengan checkpoint tersimpan.`,
+ notes:'Rute berasal dari titik yang digambar manual. Estimasi jarak menggunakan segmen lurus Haversine, bukan ruas jalan. Waktu, elevasi, akses jalan, dan lokasi singgah belum diverifikasi.',
+ accent:'lime',tags:['Preset', 'Sketsa manual'],verification:'unverified',bundledDefault:true,
+}));
+const catalog:readonly RouteInfo[]=[...defaultRoutes,...seed];
 
 export interface RouteRepository {
   list(): Promise<readonly RouteInfo[]>;
@@ -61,9 +71,9 @@ export interface RouteRepository {
 
 export const routeRepository: RouteRepository = {
   async list() {
-    return seed;
+    return catalog;
   },
   async find(id) {
-    return seed.find((route) => route.id === id) ?? null;
+    return catalog.find((route) => route.id === id) ?? null;
   },
 };
